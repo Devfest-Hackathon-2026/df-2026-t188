@@ -13,7 +13,7 @@ function respond(body: SummaryApiResponse, status: number): Response {
 }
 
 // 入力内容や要約の中身はログに出さない。
-// ログに出すのは、成功か失敗か（失敗のときはエラーの種類）、かかった秒数、やり直したかだけ
+// ログに出すのは、成功か失敗か（失敗のときはエラーの種類）、かかった秒数、やり直した回数だけ
 export async function POST(request: Request): Promise<Response> {
   let body: unknown;
   try {
@@ -29,9 +29,8 @@ export async function POST(request: Request): Promise<Response> {
 
   // request.signal は、ブラウザが接続を切った（画面を離れた）ときに知らせる
   const result = await generateSummary(input, request.signal);
-  const timing = `in ${(result.elapsedMs / 1000).toFixed(1)}s (retried: ${
-    result.retried ? "yes" : "no"
-  })`;
+  // retried は、やり直した回数（0・1・2）
+  const timing = `in ${(result.elapsedMs / 1000).toFixed(1)}s (retried: ${result.retries})`;
 
   if (result.ok) {
     console.log(`[summary] ok ${timing}`);

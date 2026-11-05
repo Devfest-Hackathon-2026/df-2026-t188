@@ -15,10 +15,13 @@ const MAX_OUTPUT_TOKENS = 4096;
 // （何も指定しないと MEDIUM になる）
 const THINKING_LEVEL = ThinkingLevel.LOW;
 
-// 待ち時間。1回目は 25 秒で時間切れにする。
-// やり直しも含めた全体の上限は 45 秒で、やり直すときは残りの時間だけ待つ。
-// 残りが 5 秒未満なら、やり直さずに失敗にする
-const FIRST_ATTEMPT_TIMEOUT_MS = 25_000;
+// 待ち時間とやり直し。
+// 1回あたり 15 秒で時間切れにする（1回目もやり直しも同じ）。やり直しは最大2回まで。
+// やり直しも含めた全体の上限は 45 秒で、残りが 5 秒未満なら、やり直さずに失敗にする。
+// Gemini の呼び出しは、ふだんは 3〜10 秒で返るが、ときどき 25 秒以上返らないことがある。
+// 長く待つより、早めに打ち切ってやり直すほうが速く返るので、この値にしている
+const ATTEMPT_TIMEOUT_MS = 15_000;
+const MAX_RETRIES = 2;
 const TOTAL_TIMEOUT_MS = 45_000;
 const MIN_RETRY_TIME_MS = 5_000;
 
@@ -34,10 +37,10 @@ type AttemptResult =
   | { ok: true; summary: Summary }
   | { ok: false; kind: SummaryFailure; status?: number };
 
-// elapsedMs と retried は、速さを測るためのログに使う（入力や要約の中身は含めない）
+// elapsedMs と retries（やり直した回数）は、速さを測るためのログに使う（入力や要約の中身は含めない）
 export type SummaryResult = AttemptResult & {
   elapsedMs: number;
-  retried: boolean;
+  retries: number;
 };
 
 const SYSTEM_INSTRUCTION = `あなたは、受診前の問診の回答を、医師に説明するための短い文章に整理する係です。
@@ -130,26 +133,33 @@ function isRetryable(result: AttemptResult): boolean {
   );
 }
 
-// 要約を作る。時間切れか一時的な通信エラーのときだけ、1回だけ自動でやり直す。
+// 要約を作る。時間切れか一時的な通信エラーのときだけ、最大2回まで自動でやり直す。
 // clientSignal は、ブラウザが接続を切ったことを知らせる。切られたら、やり直さずに止める
 export async function generateSummary(
   input: SummaryInput,
   clientSignal?: AbortSignal,
 ): Promise<SummaryResult> {
   const startedAt = Date.now();
-  let retried = false;
+  let retries = 0;
 
-  let result = await attemptSummary(input, FIRST_ATTEMPT_TIMEOUT_MS, clientSignal);
+  let result = await attemptSummary(input, ATTEMPT_TIMEOUT_MS, clientSignal);
 
-  if (isRetryable(result) && !clientSignal?.aborted) {
+  while (
+    retries < MAX_RETRIES &&
+    isRetryable(result) &&
+    !clientSignal?.aborted
+  ) {
     const remainingMs = TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
-    if (remainingMs >= MIN_RETRY_TIME_MS) {
-      retried = true;
-      result = await attemptSummary(input, remainingMs, clientSignal);
-    }
+    if (remainingMs < MIN_RETRY_TIME_MS) break;
+    retries += 1;
+    result = await attemptSummary(
+      input,
+      Math.min(ATTEMPT_TIMEOUT_MS, remainingMs),
+      clientSignal,
+    );
   }
 
-  return { ...result, elapsedMs: Date.now() - startedAt, retried };
+  return { ...result, elapsedMs: Date.now() - startedAt, retries };
 }
 
 // Gemini を1回呼ぶ。timeoutMs を過ぎるか、ブラウザが接続を切ったら、呼び出しを中止する
