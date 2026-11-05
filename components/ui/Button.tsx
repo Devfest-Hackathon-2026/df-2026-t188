@@ -45,7 +45,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${SIZE_CLASS[size]} ${VARIANT_CLASS[variant][tone]} ${className}`}
+      className={`press-feedback inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${SIZE_CLASS[size]} ${VARIANT_CLASS[variant][tone]} ${className}`}
       {...props}
     />
   );

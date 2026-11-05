@@ -4,7 +4,7 @@ import {
   useSummary,
   type SummaryCache,
 } from "@/components/intake/SummarySection";
-import { Button } from "@/components/ui/Button";
+import { DoctorSkeleton } from "@/components/intake/DoctorSkeleton";
 import { Card } from "@/components/ui/Card";
 import { TopBar } from "@/components/ui/TopBar";
 import type {
@@ -29,8 +29,6 @@ type DoctorScreenProps = {
   family: FamilyAnswers;
   summaryCache: SummaryCache | null;
   onSummaryReady: (cache: SummaryCache) => void;
-  onEditPatient: () => void;
-  onEditFamily: () => void;
 };
 
 const RESPONDENT_LABEL = { patient: "本人", family: "家族・介護者" } as const;
@@ -98,8 +96,6 @@ export function DoctorScreen({
   family,
   summaryCache,
   onSummaryReady,
-  onEditPatient,
-  onEditFamily,
 }: DoctorScreenProps) {
   const unknownRows = getUnknownRows(patient, family);
   const familyRows = buildFamilyRows(family);
@@ -118,10 +114,33 @@ export function DoctorScreen({
   const [isOpenedByUser, setIsOpenedByUser] = useState(false);
   const isDetailOpen = !hasSummary || isOpenedByUser;
 
+  // 要約の作成中は、この画面の代わりにスケルトンを出す。
+  // スケルトンを出したあとだけ、ふわっと切り替える
+  const isLoading = summaryStatus.kind === "loading";
+  const [hasShownSkeleton, setHasShownSkeleton] = useState(isLoading);
+  if (isLoading && !hasShownSkeleton) setHasShownSkeleton(true);
+
+  const statusMessage = isLoading
+    ? "AI が要約しています…"
+    : hasShownSkeleton && hasSummary
+      ? "要約ができました"
+      : "";
+
   return (
     <>
       <TopBar tone="inverse">医師に見せる画面</TopBar>
-      <div className="flex flex-col gap-6 px-4 py-6">
+      {/* 読み上げ機能に、要約の作成中と完了を伝える */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {statusMessage}
+      </p>
+      {isLoading ? (
+        <DoctorSkeleton />
+      ) : (
+      <div
+        className={`flex flex-col gap-6 px-4 py-6 ${
+          hasShownSkeleton ? "fade-in" : ""
+        }`}
+      >
         <section>
           <h2 className="mb-2 text-title">主訴（入力されたとおり）</h2>
           <dl className="flex flex-col gap-2">
@@ -225,16 +244,8 @@ export function DoctorScreen({
           )}
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <p className="text-title">戻って直す</p>
-          <Button variant="outlined" onClick={onEditPatient}>
-            本人の回答を直す
-          </Button>
-          <Button variant="outlined" tone="secondary" onClick={onEditFamily}>
-            家族・介護者の回答を直す
-          </Button>
-        </div>
       </div>
+      )}
     </>
   );
 }

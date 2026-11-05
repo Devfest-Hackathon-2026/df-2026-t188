@@ -78,6 +78,8 @@ export function useSummary(
       })
       .finally(() => clearTimeout(timer));
 
+    // 作成中に別の画面へ移ったとき（または送る内容が変わったとき）は、
+    // 通信を中止し、あとから届いても使わない。古い回答で作った要約を表示しないため
     return () => {
       isCurrent = false;
       clearTimeout(timer);
@@ -131,12 +133,6 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
       <p className="mt-2 rounded-sm bg-surface-container-highest p-2 text-body font-bold">
         患者・家族が入力した内容を AI が整理したものです。診断ではありません。
       </p>
-
-      {status.kind === "loading" && (
-        <p role="status" className="mt-4 text-body">
-          要約を作っています…
-        </p>
-      )}
 
       {status.kind === "empty" && (
         <p className="mt-4 text-body">要約する回答がありません。</p>

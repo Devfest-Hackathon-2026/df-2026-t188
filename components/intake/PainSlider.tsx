@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties } from "react";
+import { useRef } from "react";
 import { Chip } from "@/components/ui/Chip";
 import type { Answer, PainLevel } from "@/lib/intake/types";
 
@@ -66,7 +66,6 @@ export function PainSlider({ answer, onChange }: PainSliderProps) {
         aria-labelledby="pain-level-label"
         aria-valuetext={statusText(answer)}
         data-answered={isAnswered}
-        style={{ "--ratio": sliderValue / 10 } as CSSProperties}
         onPointerDown={() => {
           changedDuringPress.current = false;
         }}

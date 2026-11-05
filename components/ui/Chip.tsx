@@ -53,7 +53,7 @@ export function Chip({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`inline-flex min-h-14 items-center justify-center gap-2 rounded-sm border px-3 py-2 text-label focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
+      className={`press-feedback inline-flex min-h-14 items-center justify-center gap-2 rounded-sm border px-3 py-2 text-label focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
         selected
           ? SELECTED_CLASS[tone]
           : "border-outline bg-surface-container-lowest text-on-surface"
