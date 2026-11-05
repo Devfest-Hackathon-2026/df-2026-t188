@@ -3,33 +3,40 @@
 // 読み上げ機能への知らせは、DoctorScreen 側の role="status" で行う
 export function DoctorSkeleton() {
   return (
-    <div className="flex flex-col gap-6 px-4 py-6">
+    <div className="flex flex-1 flex-col gap-4 px-4 py-4">
       <p aria-hidden="true" className="text-title">
         AI が要約しています…
       </p>
 
-      <div aria-hidden="true" className="flex flex-col gap-6">
-        {/* 主訴 */}
-        <div className="flex flex-col gap-2">
-          <div className="skeleton h-7 w-48 rounded-sm" />
-          <div className="skeleton h-28 rounded-lg" />
-          <div className="skeleton h-28 rounded-lg" />
+      <div aria-hidden="true" className="flex flex-col gap-4">
+        {/* 体温と痛みの程度 */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="skeleton h-24 rounded-lg" />
+          <div className="skeleton h-24 rounded-lg" />
         </div>
 
+        {/* 主訴 */}
+        <div className="skeleton h-44 rounded-lg" />
+
         {/* AI の要約 */}
-        <div className="flex flex-col gap-2 rounded-lg border border-outline-variant p-4">
+        <div className="flex flex-col gap-2 rounded-lg border-2 border-outline-variant bg-surface-container-lowest p-4">
           <div className="skeleton h-7 w-40 rounded-sm" />
           <div className="skeleton h-16 rounded-sm" />
-          <div className="skeleton h-24 rounded-md" />
-          <div className="skeleton h-24 rounded-md" />
-          <div className="skeleton h-16 rounded-md" />
+          <div className="skeleton h-24 rounded-sm" />
+          <div className="skeleton h-24 rounded-sm" />
         </div>
+
+        {/* 経過 */}
+        <div className="skeleton h-56 rounded-lg" />
 
         {/* 不明の項目 */}
         <div className="skeleton h-32 rounded-lg" />
 
         {/* 薬・持病・アレルギー */}
         <div className="skeleton h-56 rounded-lg" />
+
+        {/* 今日相談したいこと */}
+        <div className="skeleton h-24 rounded-lg" />
 
         {/* 詳しく見る */}
         <div className="skeleton h-14 rounded-lg" />

@@ -85,6 +85,7 @@ function buildPrompt(input: SummaryInput): string {
       ...line("痛い場所", patient.painLocations?.join("、")),
       ...line("痛みの程度（0〜10）", patient.painLevel),
       ...line("感覚", patient.sensations?.join("、")),
+      ...line("感覚（その他・本人の言葉）", patient.sensationOther),
     ]),
     section("介在者（家族・介護者）の回答", [
       ...line("家族から見て、今いちばん心配な症状", family.chiefConcern),

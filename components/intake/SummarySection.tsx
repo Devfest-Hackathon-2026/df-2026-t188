@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
@@ -116,14 +117,11 @@ function SummaryText({ text, emptyText }: { text: string; emptyText: string }) {
   );
 }
 
-// 要約の中のまとまり。元の回答のカード（色で塗った面）と区別するため、
-// 白い面に、左の線の色でだれの回答の要約かを示す
-const SUMMARY_BLOCK_CLASS =
-  "rounded-md border-l-8 bg-surface-container-lowest px-4 py-4";
-
+// AI の要約。画面の中で一番目立つカード（青い枠）。
+// 中は線と余白で区切り、カードの中にカードは入れない
 export function SummarySection({ status }: { status: SummaryStatus }) {
   return (
-    <Card tone="surface">
+    <Card tone="highlight">
       <h2 className="flex items-center gap-2 text-title">
         <span className="rounded-sm bg-inverse-surface px-2 py-1 text-label font-bold text-inverse-on-surface">
           AI
@@ -150,7 +148,10 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
       )}
 
       {status.kind === "over_limit" && (
-        <Card tone="error" as="div" role="alert" className="mt-4">
+        <div
+          role="alert"
+          className="mt-4 rounded-sm bg-error-container p-3 text-on-error-container"
+        >
           <p className="text-body font-bold">
             文字数が上限（{SUMMARY_TEXT_LIMIT}
             文字）を超えている欄があるため、要約を作っていません。下の元の回答をご覧ください
@@ -162,13 +163,14 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
               </li>
             ))}
           </ul>
-        </Card>
+        </div>
       )}
 
       {status.kind === "ready" && (
-        <div className="mt-4 flex flex-col gap-2">
-          <div className={`${SUMMARY_BLOCK_CLASS} border-primary`}>
-            <h3 className="text-label font-bold text-primary">
+        <div className="mt-4 flex flex-col gap-4">
+          <div>
+            <h3 className="flex flex-wrap items-center gap-2 text-label font-bold">
+              <Badge kind="patient">本人</Badge>
               本人の回答の要約
             </h3>
             <SummaryText
@@ -176,8 +178,9 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
               emptyText="要約する本人の回答がありません。"
             />
           </div>
-          <div className={`${SUMMARY_BLOCK_CLASS} border-secondary`}>
-            <h3 className="text-label font-bold text-secondary">
+          <div className="border-t border-outline-variant pt-4">
+            <h3 className="flex flex-wrap items-center gap-2 text-label font-bold">
+              <Badge kind="family">家族</Badge>
               介在者（家族・介護者）の回答の要約
             </h3>
             <SummaryText
@@ -185,7 +188,7 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
               emptyText="要約する介在者の回答がありません。"
             />
           </div>
-          <div className={`${SUMMARY_BLOCK_CLASS} border-outline`}>
+          <div className="border-t border-outline-variant pt-4">
             <h3 className="text-label font-bold">
               本人と介在者で食い違っている点（AIが見つけたもの）
             </h3>

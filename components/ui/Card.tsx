@@ -1,25 +1,22 @@
 import type { ReactNode } from "react";
 
-// M3 のカード。tone で面の色を決める
+// カード。白い面に薄い影。カードの中にカードは入れない（二重の枠を作らない）
 type Tone =
-  | "primary" // 本人の回答
-  | "secondary" // 家族・介護者の回答
-  | "caution" // 「不明」などの注意
-  | "error" // 文字数の上限超えのお知らせ
-  | "surface" // AI の要約など
-  | "outlined"; // 枠線だけ
+  | "plain" // ふつうのカード
+  | "highlight" // 一番目立たせるカード（AI の要約）
+  | "caution" // 要確認・不明
+  | "error"; // 文字数の上限超えのお知らせ
 
 const TONE_CLASS: Record<Tone, string> = {
-  primary: "bg-primary-container text-on-surface",
-  secondary: "bg-secondary-container text-on-surface",
+  plain: "bg-surface-container-lowest text-on-surface shadow-card",
+  highlight:
+    "border-2 border-primary bg-surface-container-lowest text-on-surface shadow-card",
   caution: "bg-caution-container text-on-caution-container",
   error: "bg-error-container text-on-error-container",
-  surface: "border border-outline bg-surface-container text-on-surface",
-  outlined: "border border-outline-variant bg-surface text-on-surface",
 };
 
 type CardProps = {
-  tone: Tone;
+  tone?: Tone;
   as?: "section" | "div";
   role?: "alert";
   className?: string;
@@ -27,7 +24,7 @@ type CardProps = {
 };
 
 export function Card({
-  tone,
+  tone = "plain",
   as: Tag = "section",
   role,
   className = "",

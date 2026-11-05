@@ -47,6 +47,7 @@ export function buildSummaryInput(
       painLocations: withoutDontKnowList(answeredValue(patient.painLocations)),
       painLevel: answeredValue(patient.painLevel),
       sensations: withoutDontKnowList(answeredValue(patient.sensations)),
+      sensationOther: answeredValue(patient.sensationOther),
     }),
     family: compact({
       chiefConcern: answeredValue(family.chiefConcern),
@@ -82,6 +83,11 @@ export function findOverLimitFields(input: SummaryInput): OverLimitField[] {
       respondent: "patient",
       label: "今いちばん困っていること",
       text: input.patient.chiefComplaint,
+    },
+    {
+      respondent: "patient",
+      label: "感覚（その他）",
+      text: input.patient.sensationOther,
     },
     {
       respondent: "family",

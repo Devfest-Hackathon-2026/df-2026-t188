@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { CharCount } from "@/components/intake/CharCount";
+import { FieldCard } from "@/components/intake/FieldCard";
 import { SingleSelect } from "@/components/intake/SingleSelect";
+import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { TopBar } from "@/components/ui/TopBar";
@@ -19,7 +21,7 @@ import type {
 const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
 
 const TEXT_INPUT_CLASS =
-  "w-full rounded-xs border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-secondary";
+  "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-secondary";
 
 const FIELD_LABEL_CLASS = "mb-4 block text-title";
 
@@ -27,7 +29,7 @@ type FamilyScreenProps = {
   answers: FamilyAnswers;
   onChange: (update: Partial<FamilyAnswers>) => void;
   onNext: () => void;
-  onBack: () => void;
+  nextLabel: string;
 };
 
 // 空や空白だけなら未回答に戻す。書かれた文字はそのまま持つ
@@ -150,7 +152,7 @@ export function FamilyScreen({
   answers,
   onChange,
   onNext,
-  onBack,
+  nextLabel,
 }: FamilyScreenProps) {
   const temperature =
     answers.temperature.status === "answered"
@@ -167,23 +169,25 @@ export function FamilyScreen({
   return (
     <>
       <TopBar tone="secondary">家族・介護者が答えています</TopBar>
-      <div className="stagger flex flex-col gap-10 px-4 py-6">
-        <TextField
-          id="chief-concern"
-          label="家族から見て、今いちばん心配な症状"
-          answer={answers.chiefConcern}
-          onChange={(next) => onChange({ chiefConcern: next })}
-          showCharCount
-        />
+      <div className="stagger flex flex-1 flex-col gap-4 px-4 py-4">
+        <FieldCard field="chiefConcern">
+          <TextField
+            id="chief-concern"
+            label="家族から見て、今いちばん心配な症状"
+            answer={answers.chiefConcern}
+            onChange={(next) => onChange({ chiefConcern: next })}
+            showCharCount
+          />
+        </FieldCard>
 
-        <div className="flex flex-col gap-4">
+        <FieldCard field="onset">
           <SingleSelect
             legend="いつからですか？"
             options={ONSET_OPTIONS}
             selected={choiceOf(answers.onset)}
             onChange={(next) => onChange({ onset: toChoiceAnswer(next) })}
           />
-          <div>
+          <div className="mt-4">
             <label htmlFor="onset-detail" className="mb-2 block text-body">
               くわしい時刻など（書かなくても大丈夫です）
             </label>
@@ -199,16 +203,18 @@ export function FamilyScreen({
             />
             <CharCount text={textOf(answers.onsetDetail)} />
           </div>
-        </div>
+        </FieldCard>
 
-        <SingleSelect
-          legend="ようすはどう変わってきましたか？"
-          options={COURSE_OPTIONS}
-          selected={choiceOf(answers.course)}
-          onChange={(next) => onChange({ course: toChoiceAnswer(next) })}
-        />
+        <FieldCard field="course">
+          <SingleSelect
+            legend="ようすはどう変わってきましたか？"
+            options={COURSE_OPTIONS}
+            selected={choiceOf(answers.course)}
+            onChange={(next) => onChange({ course: toChoiceAnswer(next) })}
+          />
+        </FieldCard>
 
-        <div>
+        <FieldCard field="temperature">
           <label htmlFor="temperature" className={FIELD_LABEL_CLASS}>
             体温（測っていれば）
           </label>
@@ -271,61 +277,69 @@ export function FamilyScreen({
             }}
             className="mt-2 w-full"
           />
-        </div>
+        </FieldCard>
 
-        <SingleSelect
-          legend="食事や水分はとれていますか？"
-          options={FOOD_INTAKE_OPTIONS}
-          selected={choiceOf(answers.foodIntake)}
-          onChange={(next) => onChange({ foodIntake: toChoiceAnswer(next) })}
-        />
+        <FieldCard field="foodIntake">
+          <SingleSelect
+            legend="食事や水分はとれていますか？"
+            options={FOOD_INTAKE_OPTIONS}
+            selected={choiceOf(answers.foodIntake)}
+            onChange={(next) => onChange({ foodIntake: toChoiceAnswer(next) })}
+          />
+        </FieldCard>
 
-        <TextField
-          id="differences"
-          label="普段とちがうところ（表情、行動、歩き方など）"
-          answer={answers.differences}
-          onChange={(next) => onChange({ differences: next })}
-          showCharCount
-        />
+        <FieldCard field="differences">
+          <TextField
+            id="differences"
+            label="普段とちがうところ（表情、行動、歩き方など）"
+            answer={answers.differences}
+            onChange={(next) => onChange({ differences: next })}
+            showCharCount
+          />
+        </FieldCard>
 
-        <TextField
-          id="conditions"
-          label="持病・これまでの病気"
-          answer={answers.conditions}
-          onChange={(next) => onChange({ conditions: next })}
-        />
+        <FieldCard field="conditions">
+          <TextField
+            id="conditions"
+            label="持病・これまでの病気"
+            answer={answers.conditions}
+            onChange={(next) => onChange({ conditions: next })}
+          />
+        </FieldCard>
 
-        <TextOrNoneField
-          id="medications"
-          label="飲んでいる薬"
-          answer={answers.medications}
-          onChange={(next) => onChange({ medications: next })}
-        />
+        <FieldCard field="medications">
+          <TextOrNoneField
+            id="medications"
+            label="飲んでいる薬"
+            answer={answers.medications}
+            onChange={(next) => onChange({ medications: next })}
+          />
+        </FieldCard>
 
-        <TextOrNoneField
-          id="allergies"
-          label="アレルギー"
-          answer={answers.allergies}
-          onChange={(next) => onChange({ allergies: next })}
-        />
+        <FieldCard field="allergies">
+          <TextOrNoneField
+            id="allergies"
+            label="アレルギー"
+            answer={answers.allergies}
+            onChange={(next) => onChange({ allergies: next })}
+          />
+        </FieldCard>
 
-        <TextField
-          id="consultation"
-          label="今日相談したいこと"
-          answer={answers.consultation}
-          onChange={(next) => onChange({ consultation: next })}
-          showCharCount
-        />
-
-        <div className="flex flex-col gap-4">
-          <Button tone="secondary" onClick={onNext}>
-            次へ（医師に見せる画面）
-          </Button>
-          <Button variant="outlined" tone="secondary" onClick={onBack}>
-            前の画面にもどる
-          </Button>
-        </div>
+        <FieldCard field="consultation">
+          <TextField
+            id="consultation"
+            label="今日相談したいこと"
+            answer={answers.consultation}
+            onChange={(next) => onChange({ consultation: next })}
+            showCharCount
+          />
+        </FieldCard>
       </div>
+      <BottomBar>
+        <Button tone="secondary" onClick={onNext}>
+          {nextLabel}
+        </Button>
+      </BottomBar>
     </>
   );
 }

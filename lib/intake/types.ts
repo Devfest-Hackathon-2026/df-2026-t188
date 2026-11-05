@@ -24,6 +24,7 @@ export type PatientAnswers = {
   painLocations: Answer<BodyPart[], "patient">;
   painLevel: Answer<PainLevel, "patient">;
   sensations: Answer<Sensation[], "patient">;
+  sensationOther: Answer<string, "patient">; // 感覚のその他（本人が自分の言葉で書く）
   chiefComplaint: Answer<string, "patient">; // 主訴：本人の言葉
 };
 
@@ -58,7 +59,7 @@ export type FamilyAnswers = {
 };
 
 export type IntakeState = {
-  step: "ability" | "patient" | "family" | "doctor";
+  step: "ability" | "patient" | "family" | "review" | "doctor";
   canSelfReport: "able" | "difficult" | null; // null はまだ選んでいない状態
   patient: PatientAnswers;
   family: FamilyAnswers;

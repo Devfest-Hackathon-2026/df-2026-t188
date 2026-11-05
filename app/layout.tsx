@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 
@@ -11,6 +11,11 @@ const notoSansJp = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: "受診前の問診",
+};
+
+// スマホの下の端（ホームバー）の余白を使えるようにする。下に固定するボタンで使う
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

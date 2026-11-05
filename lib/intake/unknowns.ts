@@ -101,6 +101,13 @@ export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
       required: false,
       ...describe(patient.sensations, isDontKnowList, joinList),
     },
+    {
+      key: "sensationOther",
+      respondent: "patient",
+      label: "感覚（その他・本人の言葉）",
+      required: false,
+      ...describe(patient.sensationOther, neverDontKnow, asWritten),
+    },
   ];
 }
 

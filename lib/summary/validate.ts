@@ -83,6 +83,7 @@ const PATIENT_CHECKS: Record<string, (value: unknown) => boolean> = {
   painLocations: (value) => isChoiceList(value, BODY_PARTS),
   painLevel: isPainLevel,
   sensations: (value) => isChoiceList(value, SENSATIONS),
+  sensationOther: isLimitedText,
 };
 
 const FAMILY_CHECKS: Record<string, (value: unknown) => boolean> = {

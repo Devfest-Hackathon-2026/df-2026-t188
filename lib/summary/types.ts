@@ -22,6 +22,7 @@ export type SummaryInput = {
     painLocations?: BodyPart[];
     painLevel?: PainLevel;
     sensations?: Sensation[];
+    sensationOther?: string; // 感覚のその他（本人が自分の言葉で書いた文章）
   };
   family: {
     chiefConcern?: string;
