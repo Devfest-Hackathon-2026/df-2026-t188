@@ -11,6 +11,7 @@ import type { Answer, PatientAnswers } from "@/lib/intake/types";
 type PatientScreenProps = {
   answers: PatientAnswers;
   onChange: (update: Partial<PatientAnswers>) => void;
+  onNext: () => void;
   onBack: () => void;
 };
 
@@ -28,10 +29,13 @@ function toSelectionAnswer<T>(values: T[]): Answer<T[], "patient"> {
 export function PatientScreen({
   answers,
   onChange,
+  onNext,
   onBack,
 }: PatientScreenProps) {
-  const concernsText =
-    answers.concerns.status === "answered" ? answers.concerns.value : "";
+  const chiefComplaintText =
+    answers.chiefComplaint.status === "answered"
+      ? answers.chiefComplaint.value
+      : "";
 
   return (
     <>
@@ -63,18 +67,21 @@ export function PatientScreen({
         />
 
         <div>
-          <label htmlFor="concerns" className="mb-3 block text-xl font-bold">
-            困っていることがあれば書いてください（書かなくても大丈夫です）
+          <label
+            htmlFor="chief-complaint"
+            className="mb-3 block text-xl font-bold"
+          >
+            今いちばん困っていること（書かなくても大丈夫です）
           </label>
           <textarea
-            id="concerns"
+            id="chief-complaint"
             rows={4}
             autoComplete="off"
-            value={concernsText}
+            value={chiefComplaintText}
             onChange={(event) => {
               const text = event.target.value;
               onChange({
-                concerns:
+                chiefComplaint:
                   text.trim() === ""
                     ? { respondent: "patient", status: "unanswered" }
                     : { respondent: "patient", status: "answered", value: text },
@@ -87,10 +94,10 @@ export function PatientScreen({
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            disabled
-            className="min-h-14 rounded-xl bg-zinc-300 px-3 py-2 text-lg font-bold text-zinc-700"
+            onClick={onNext}
+            className="min-h-14 rounded-xl bg-blue-700 px-3 py-2 text-lg font-bold text-white"
           >
-            次へ（家族の入力：準備中）
+            次へ（家族・介護者の入力）
           </button>
           <button
             type="button"

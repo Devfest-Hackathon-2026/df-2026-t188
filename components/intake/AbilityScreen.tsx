@@ -6,6 +6,7 @@ type AbilityScreenProps = {
   hasPatientInput: boolean;
   onChooseAble: () => void;
   onChooseDifficult: () => void;
+  onNext: () => void;
 };
 
 export function AbilityScreen({
@@ -13,6 +14,7 @@ export function AbilityScreen({
   hasPatientInput,
   onChooseAble,
   onChooseDifficult,
+  onNext,
 }: AbilityScreenProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const isDifficult = canSelfReport === "difficult";
@@ -85,10 +87,10 @@ export function AbilityScreen({
           <p className="text-lg">本人の回答は「回答困難」として記録しました。</p>
           <button
             type="button"
-            disabled
-            className="min-h-14 rounded-xl bg-zinc-300 px-3 py-2 text-lg font-bold text-zinc-700"
+            onClick={onNext}
+            className="min-h-14 rounded-xl bg-blue-700 px-3 py-2 text-lg font-bold text-white"
           >
-            次へ（家族の入力：準備中）
+            次へ（家族・介護者の入力）
           </button>
         </div>
       )}
