@@ -23,7 +23,7 @@ export function AbilityScreen({
   const isDifficult = canSelfReport === "difficult";
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-8">
+    <div className="stagger flex flex-col gap-8 px-4 py-8">
       <h1 tabIndex={-1} data-screen-heading className="text-headline outline-none">
         本人は自分の症状を説明できますか？
       </h1>

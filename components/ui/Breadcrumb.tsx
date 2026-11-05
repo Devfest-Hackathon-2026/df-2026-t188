@@ -1,67 +1,76 @@
-// パンくずリスト。いまの場所を示し、すでに通った画面へ移れるようにする
+// パンくずリスト。進んだ分だけ項目が増える。
+// 今いる画面と、それまでに通った画面だけを出し、通った画面へは押して移れる。
+// 画面には短い名前を出し、読み上げ機能には正式な名前を伝える
 export type BreadcrumbItem<K extends string> = {
   key: K;
-  label: string;
-  state:
-    | "current" // 今いる画面（強調して表示し、押せない）
-    | "visited" // すでに通った画面（押すと移れる）
-    | "upcoming" // まだ進んでいない画面（押せない）
-    | "skipped"; // 飛ばした画面（押せない）
+  label: string; // 画面に出す短い名前（例：「確認」）
+  fullName: string; // 読み上げ機能に伝える正式な名前（例：「説明できるか」）
+  isCurrent: boolean;
 };
 
 type BreadcrumbProps<K extends string> = {
   items: BreadcrumbItem<K>[];
   onSelect: (key: K) => void;
+  position: { current: number; total: number }; // 今が全体の何番目か
 };
 
-// 押せる場所は 48px 以上の高さにする
-const ITEM_CLASS = "inline-flex min-h-12 items-center px-1 text-support";
+// 押せる場所は縦横 48px 以上にする
+const ITEM_CLASS =
+  "inline-flex min-h-12 min-w-12 items-center justify-center px-1 text-support";
+
+function ItemName({ item }: { item: BreadcrumbItem<string> }) {
+  return (
+    <>
+      <span aria-hidden="true">{item.label}</span>
+      <span className="sr-only">{item.fullName}</span>
+    </>
+  );
+}
 
 export function Breadcrumb<K extends string>({
   items,
   onSelect,
+  position,
 }: BreadcrumbProps<K>) {
   return (
-    <nav aria-label="いまの場所" className="px-3 pt-2">
-      <ol className="flex flex-wrap items-center">
-        {items.map((item, index) => (
-          <li key={item.key} className="flex items-center">
-            {index > 0 && (
-              <span aria-hidden="true" className="px-1 text-on-surface-variant">
-                ＞
-              </span>
-            )}
-            {item.state === "visited" && (
-              <button
-                type="button"
-                onClick={() => onSelect(item.key)}
-                className={`${ITEM_CLASS} press-feedback rounded-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-on-surface`}
-              >
-                {item.label}
-              </button>
-            )}
-            {item.state === "current" && (
-              <span
-                aria-current="step"
-                className={`${ITEM_CLASS} font-bold text-on-surface`}
-              >
-                {item.label}
-              </span>
-            )}
-            {item.state === "upcoming" && (
-              <span className={`${ITEM_CLASS} text-on-surface-variant`}>
-                {item.label}
-              </span>
-            )}
-            {item.state === "skipped" && (
-              <span className={`${ITEM_CLASS} text-on-surface-variant`}>
-                <span className="line-through">{item.label}</span>
-                （とばしました）
-              </span>
-            )}
-          </li>
-        ))}
-      </ol>
-    </nav>
+    <div className="flex items-center justify-between gap-2 px-3 pt-2">
+      <nav aria-label="いまの場所">
+        <ol className="flex items-center">
+          {items.map((item, index) => (
+            <li key={item.key} className="crumb-enter flex items-center">
+              {index > 0 && (
+                <span aria-hidden="true" className="px-1 text-on-surface-variant">
+                  ＞
+                </span>
+              )}
+              {item.isCurrent ? (
+                <span
+                  aria-current="step"
+                  className={`${ITEM_CLASS} font-bold text-on-surface`}
+                >
+                  <ItemName item={item} />
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onSelect(item.key)}
+                  className={`${ITEM_CLASS} press-feedback rounded-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-on-surface`}
+                >
+                  <ItemName item={item} />
+                </button>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
+      <p className="shrink-0 px-1 text-support text-on-surface-variant">
+        <span aria-hidden="true">
+          {position.current} / {position.total}
+        </span>
+        <span className="sr-only">
+          全{position.total}画面中{position.current}画面目
+        </span>
+      </p>
+    </div>
   );
 }

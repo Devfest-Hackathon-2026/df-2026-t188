@@ -43,7 +43,7 @@ export function PatientScreen({
   return (
     <>
       <TopBar tone="primary">本人が答えています</TopBar>
-      <div className="flex flex-col gap-10 px-4 py-6">
+      <div className="stagger flex flex-col gap-10 px-4 py-6">
         <MultiSelect
           legend="どこが痛いですか？（いくつでも選べます）"
           options={BODY_PARTS}

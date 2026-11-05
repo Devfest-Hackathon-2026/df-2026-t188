@@ -167,7 +167,7 @@ export function FamilyScreen({
   return (
     <>
       <TopBar tone="secondary">家族・介護者が答えています</TopBar>
-      <div className="flex flex-col gap-10 px-4 py-6">
+      <div className="stagger flex flex-col gap-10 px-4 py-6">
         <TextField
           id="chief-concern"
           label="家族から見て、今いちばん心配な症状"

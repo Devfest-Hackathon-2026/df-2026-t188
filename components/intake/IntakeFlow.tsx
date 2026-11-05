@@ -15,12 +15,12 @@ import type {
 
 type Step = IntakeState["step"];
 
-// 画面の順番と、パンくずリストに出す名前
-const STEPS: { key: Step; label: string }[] = [
-  { key: "ability", label: "説明できるか" },
-  { key: "patient", label: "本人" },
-  { key: "family", label: "家族・介護者" },
-  { key: "doctor", label: "医師に見せる" },
+// 画面の順番と、パンくずリストに出す名前（label は画面用の短い名前、fullName は読み上げ用の正式な名前）
+const STEPS: { key: Step; label: string; fullName: string }[] = [
+  { key: "ability", label: "確認", fullName: "説明できるか" },
+  { key: "patient", label: "本人", fullName: "本人" },
+  { key: "family", label: "家族", fullName: "家族・介護者" },
+  { key: "doctor", label: "医師", fullName: "医師に見せる" },
 ];
 
 function stepIndex(step: Step): number {
@@ -95,19 +95,27 @@ function moveTo(state: FlowState, step: Step): FlowState {
   };
 }
 
+// この流れで通る画面。最初に「難しい」を選んだときは、本人の画面を飛ばす
+function flowSteps(state: FlowState) {
+  return state.canSelfReport === "difficult"
+    ? STEPS.filter((item) => item.key !== "patient")
+    : STEPS;
+}
+
+// パンくずに出すのは、今いる画面と、それまでに通った画面だけ
 function breadcrumbItems(state: FlowState): BreadcrumbItem<Step>[] {
-  return STEPS.map(({ key, label }, index) => {
-    if (key === state.step) return { key, label, state: "current" };
-    // 最初に「難しい」を選んだときは、本人の画面を飛ばす
-    if (key === "patient" && state.canSelfReport === "difficult") {
-      return { key, label, state: "skipped" };
-    }
-    return {
-      key,
-      label,
-      state: index <= state.reachedIndex ? "visited" : "upcoming",
-    };
-  });
+  return flowSteps(state)
+    .filter((item) => stepIndex(item.key) <= state.reachedIndex)
+    .map((item) => ({ ...item, isCurrent: item.key === state.step }));
+}
+
+// 今が全体の何番目か。本人の画面を飛ばす流れでは、全体を3として数える
+function flowPosition(state: FlowState) {
+  const steps = flowSteps(state);
+  return {
+    current: steps.findIndex((item) => item.key === state.step) + 1,
+    total: steps.length,
+  };
 }
 
 const DIRECTION_CLASS = {
@@ -159,7 +167,11 @@ export function IntakeFlow() {
       ref={mainRef}
       className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-x-clip text-body"
     >
-      <Breadcrumb items={breadcrumbItems(state)} onSelect={goToStep} />
+      <Breadcrumb
+        items={breadcrumbItems(state)}
+        onSelect={goToStep}
+        position={flowPosition(state)}
+      />
       <div
         key={state.step}
         className={state.direction ? DIRECTION_CLASS[state.direction] : ""}

@@ -115,7 +115,7 @@ export function DoctorScreen({
   const isDetailOpen = !hasSummary || isOpenedByUser;
 
   // 要約の作成中は、この画面の代わりにスケルトンを出す。
-  // スケルトンを出したあとだけ、ふわっと切り替える
+  // スケルトンから切り替わるときは、カードが上から順にふわっと出る（.stagger）
   const isLoading = summaryStatus.kind === "loading";
   const [hasShownSkeleton, setHasShownSkeleton] = useState(isLoading);
   if (isLoading && !hasShownSkeleton) setHasShownSkeleton(true);
@@ -136,11 +136,7 @@ export function DoctorScreen({
       {isLoading ? (
         <DoctorSkeleton />
       ) : (
-      <div
-        className={`flex flex-col gap-6 px-4 py-6 ${
-          hasShownSkeleton ? "fade-in" : ""
-        }`}
-      >
+      <div className="stagger flex flex-col gap-6 px-4 py-6">
         <section>
           <h2 className="mb-2 text-title">主訴（入力されたとおり）</h2>
           <dl className="flex flex-col gap-2">
