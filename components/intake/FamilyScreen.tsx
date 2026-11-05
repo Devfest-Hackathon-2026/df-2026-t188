@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CharCount } from "@/components/intake/CharCount";
 import { SingleSelect } from "@/components/intake/SingleSelect";
 import {
   COURSE_OPTIONS,
@@ -58,9 +59,16 @@ type TextFieldProps = {
   label: string;
   answer: FamilyAnswer<string>;
   onChange: (next: FamilyAnswer<string>) => void;
+  showCharCount?: boolean; // AI の要約に送る欄だけ、文字数を表示する
 };
 
-function TextField({ id, label, answer, onChange }: TextFieldProps) {
+function TextField({
+  id,
+  label,
+  answer,
+  onChange,
+  showCharCount = false,
+}: TextFieldProps) {
   return (
     <div>
       <label htmlFor={id} className="mb-3 block text-xl font-bold">
@@ -74,6 +82,7 @@ function TextField({ id, label, answer, onChange }: TextFieldProps) {
         onChange={(event) => onChange(toTextAnswer(event.target.value))}
         className={TEXT_INPUT_CLASS}
       />
+      {showCharCount && <CharCount text={textOf(answer)} />}
     </div>
   );
 }
@@ -173,6 +182,7 @@ export function FamilyScreen({
           label="家族から見て、今いちばん心配な症状"
           answer={answers.chiefConcern}
           onChange={(next) => onChange({ chiefConcern: next })}
+          showCharCount
         />
 
         <div className="flex flex-col gap-4">
@@ -196,6 +206,7 @@ export function FamilyScreen({
               }
               className={TEXT_INPUT_CLASS}
             />
+            <CharCount text={textOf(answers.onsetDetail)} />
           </div>
         </div>
 
@@ -282,6 +293,7 @@ export function FamilyScreen({
           label="普段とちがうところ（表情、行動、歩き方など）"
           answer={answers.differences}
           onChange={(next) => onChange({ differences: next })}
+          showCharCount
         />
 
         <TextField
@@ -310,6 +322,7 @@ export function FamilyScreen({
           label="今日相談したいこと"
           answer={answers.consultation}
           onChange={(next) => onChange({ consultation: next })}
+          showCharCount
         />
 
         <div className="flex flex-col gap-3">

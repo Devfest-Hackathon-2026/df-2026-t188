@@ -1,3 +1,4 @@
+import { CharCount } from "@/components/intake/CharCount";
 import { MultiSelect } from "@/components/intake/MultiSelect";
 import { PainSlider } from "@/components/intake/PainSlider";
 import {
@@ -89,6 +90,7 @@ export function PatientScreen({
             }}
             className="w-full rounded-xl border-2 border-zinc-400 bg-background p-3 text-lg"
           />
+          <CharCount text={chiefComplaintText} />
         </div>
 
         <div className="flex flex-col gap-3">

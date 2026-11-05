@@ -5,6 +5,7 @@ import { AbilityScreen } from "@/components/intake/AbilityScreen";
 import { DoctorScreen } from "@/components/intake/DoctorScreen";
 import { FamilyScreen } from "@/components/intake/FamilyScreen";
 import { PatientScreen } from "@/components/intake/PatientScreen";
+import type { SummaryCache } from "@/components/intake/SummarySection";
 import type {
   FamilyAnswers,
   IntakeState,
@@ -68,6 +69,8 @@ export function IntakeFlow() {
     patient: createUnansweredPatientAnswers(),
     family: createUnansweredFamilyAnswers(),
   });
+  // 要約も画面の中（Reactの状態）だけで持つ。閉じたら消える
+  const [summaryCache, setSummaryCache] = useState<SummaryCache | null>(null);
 
   const hasPatientInput =
     state.canSelfReport === "able" &&
@@ -144,6 +147,8 @@ export function IntakeFlow() {
           canSelfReport={state.canSelfReport}
           patient={state.patient}
           family={state.family}
+          summaryCache={summaryCache}
+          onSummaryReady={setSummaryCache}
           onEditPatient={goToPatientSide}
           onEditFamily={() => goToStep("family")}
         />
