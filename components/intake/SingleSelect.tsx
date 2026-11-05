@@ -16,15 +16,14 @@ export function SingleSelect<T extends string>({
 }: SingleSelectProps<T>) {
   return (
     <fieldset>
-      <legend className="mb-4 text-title">{legend}</legend>
-      <div className="grid grid-cols-2 gap-2">
+      <legend className="mb-3 text-title">{legend}</legend>
+      <div className="grid grid-cols-2 gap-3">
         {options.map((option) => {
           const isSelected = selected === option;
           return (
             <Chip
               key={option}
               label={option}
-              tone="secondary"
               selected={isSelected}
               onClick={() => onChange(isSelected ? null : option)}
               className={chipSpanClass(option)}

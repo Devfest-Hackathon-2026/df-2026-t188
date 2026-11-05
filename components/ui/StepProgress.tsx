@@ -1,4 +1,5 @@
-// 今が全体の何番目かを示す。「ステップ 2/5」と、区切りのある高さ 6px のプログレスバー
+// 今が全体の何番目かを示す。「STEP 2/5」と、区切りのある高さ 6px のプログレスバー。
+// 進んだ分だけ、区切りが緑に変わる
 type StepProgressProps = {
   current: number;
   total: number;
@@ -6,12 +7,12 @@ type StepProgressProps = {
 
 export function StepProgress({ current, total }: StepProgressProps) {
   return (
-    <div className="flex items-center gap-3 px-4 pt-3">
+    <div className="flex flex-col items-center gap-2 px-4 pt-2 pb-3">
       <span
         aria-hidden="true"
-        className="shrink-0 rounded-full bg-primary-container px-3 py-1 text-support font-bold text-on-primary-container"
+        className="rounded-full bg-primary-container px-3 text-support font-bold tracking-wider text-on-primary-container"
       >
-        ステップ {current}/{total}
+        STEP {current}/{total}
       </span>
       <div
         role="progressbar"
@@ -20,15 +21,18 @@ export function StepProgress({ current, total }: StepProgressProps) {
         aria-valuemax={total}
         aria-valuenow={current}
         aria-valuetext={`全${total}画面中${current}画面目`}
-        className="flex flex-1 gap-1.5"
+        className="flex w-full gap-1.5"
       >
         {Array.from({ length: total }, (_, index) => (
           <span
             key={index}
-            className={`h-1.5 flex-1 rounded-full ${
-              index < current ? "bg-primary" : "bg-outline-variant"
-            }`}
-          />
+            className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-outline-variant"
+          >
+            <span
+              data-active={index < current}
+              className="progress-fill absolute inset-0 rounded-full bg-primary"
+            />
+          </span>
         ))}
       </div>
     </div>

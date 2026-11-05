@@ -5,7 +5,6 @@ import { SingleSelect } from "@/components/intake/SingleSelect";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import { TopBar } from "@/components/ui/TopBar";
 import {
   COURSE_OPTIONS,
   FOOD_INTAKE_OPTIONS,
@@ -21,7 +20,7 @@ import type {
 const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
 
 const TEXT_INPUT_CLASS =
-  "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-secondary";
+  "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
 
 const FIELD_LABEL_CLASS = "mb-4 block text-title";
 
@@ -130,16 +129,14 @@ function TextOrNoneField({ id, label, answer, onChange }: TextOrNoneFieldProps) 
         }}
         className={TEXT_INPUT_CLASS}
       />
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <Chip
           label="ない"
-          tone="secondary"
           selected={value?.kind === "none"}
           onClick={() => toggle("none")}
         />
         <Chip
           label="わからない"
-          tone="secondary"
           selected={value?.kind === "dont_know"}
           onClick={() => toggle("dont_know")}
         />
@@ -168,7 +165,6 @@ export function FamilyScreen({
 
   return (
     <>
-      <TopBar tone="secondary">家族・介護者が答えています</TopBar>
       <div className="stagger flex flex-1 flex-col gap-4 px-4 py-4">
         <FieldCard field="chiefConcern">
           <TextField
@@ -261,7 +257,6 @@ export function FamilyScreen({
           </p>
           <Chip
             label="測っていない"
-            tone="secondary"
             selected={isNotMeasured}
             onClick={() => {
               setTemperatureText("");
@@ -275,7 +270,7 @@ export function FamilyScreen({
                     },
               });
             }}
-            className="mt-2 w-full"
+            className="mt-3 w-full"
           />
         </FieldCard>
 
@@ -336,7 +331,7 @@ export function FamilyScreen({
         </FieldCard>
       </div>
       <BottomBar>
-        <Button tone="secondary" onClick={onNext}>
+        <Button onClick={onNext}>
           {nextLabel}
         </Button>
       </BottomBar>

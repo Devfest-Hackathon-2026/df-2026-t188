@@ -1,19 +1,25 @@
-// 画面の上に常に出す帯。だれが答えている画面かを、色と文字の両方で示す。
+// 画面名の帯。だれが答えている画面かを、色と文字の両方で示す。
 // 画面の見出しでもあり、画面が切り替わったときにフォーカスを受け取る
-type Tone = "primary" | "secondary" | "inverse";
+export type TopBarTone = "patient" | "family" | "neutral";
 
-const TONE_CLASS: Record<Tone, string> = {
-  primary: "bg-primary text-on-primary", // 本人
-  secondary: "bg-secondary text-on-secondary", // 家族・介護者
-  inverse: "bg-inverse-surface text-inverse-on-surface", // 医師に見せる画面
+const TONE_CLASS: Record<TopBarTone, string> = {
+  patient: "bg-patient text-on-patient", // 本人（青系）
+  family: "bg-family text-on-family", // 家族・介護者（紫系）
+  neutral: "bg-inverse-surface text-inverse-on-surface", // そのほかの画面
 };
 
-export function TopBar({ tone, children }: { tone: Tone; children: string }) {
+export function TopBar({
+  tone,
+  children,
+}: {
+  tone: TopBarTone;
+  children: string;
+}) {
   return (
     <h1
       tabIndex={-1}
       data-screen-heading
-      className={`sticky top-0 z-10 px-4 py-4 text-center text-title outline-none ${TONE_CLASS[tone]}`}
+      className={`px-4 py-2 text-center text-title outline-none ${TONE_CLASS[tone]}`}
     >
       {children}
     </h1>

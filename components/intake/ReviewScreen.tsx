@@ -3,7 +3,6 @@ import { Badge, RESPONDENT_BADGE } from "@/components/ui/Badge";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
 import { PencilIcon } from "@/components/ui/icons";
-import { TopBar } from "@/components/ui/TopBar";
 import type {
   FamilyAnswers,
   IntakeState,
@@ -99,8 +98,7 @@ export function ReviewScreen({
 
   return (
     <>
-      <TopBar tone="inverse">入力内容の見直し</TopBar>
-      <div className="stagger flex flex-1 flex-col gap-4 px-4 py-4">
+      <div className="flex flex-1 flex-col gap-4 px-4 py-4">
         <p className="text-body">
           入力した内容です。直したいところは「編集」を押してください。
         </p>
@@ -110,22 +108,27 @@ export function ReviewScreen({
           </p>
         )}
 
-        {/* 1枚のカードの中を、細い線で区切る（カードの中にカードを入れない） */}
-        <ul className="divide-y divide-outline-variant rounded-lg bg-surface-container-lowest shadow-card">
+        {/* 項目ごとのカード：小さなラベル、内容（入力そのまま）、右の「編集」ボタン */}
+        <ul className="stagger flex flex-col gap-3">
           {items.map((item) => {
             const badge = RESPONDENT_BADGE[item.main.respondent];
             return (
-              <li key={item.field} className="flex items-center gap-2 py-3 pr-2 pl-4">
+              <li
+                key={item.field}
+                className="flex items-center gap-3 rounded-lg bg-surface-container-lowest p-4 shadow-card"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2">
-                    <span className="text-label font-bold">{item.title}</span>
+                    <span className="rounded-full bg-primary-container px-3 text-support font-bold text-on-primary-container">
+                      {item.title}
+                    </span>
                     <Badge kind={badge.kind}>{badge.label}</Badge>
                   </p>
-                  <p className="mt-1 text-body">
+                  <p className="mt-2 text-body font-medium">
                     <AnswerValue row={item.main} />
                   </p>
                   {item.extra?.state === "answered" && (
-                    <p className="mt-1 text-body break-words whitespace-pre-wrap">
+                    <p className="mt-1 text-body font-medium break-words whitespace-pre-wrap">
                       {item.extra.text}
                     </p>
                   )}
@@ -134,9 +137,9 @@ export function ReviewScreen({
                   type="button"
                   aria-label={`${item.title}を編集`}
                   onClick={() => onEdit(item.main.respondent, item.field)}
-                  className="press-feedback inline-flex min-h-14 min-w-14 shrink-0 flex-col items-center justify-center rounded-md text-support font-medium text-primary focus-visible:outline-2 focus-visible:outline-on-surface"
+                  className="press-feedback chunky inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md border border-outline bg-surface-container-lowest px-3 text-support font-bold text-on-surface focus-visible:outline-2 focus-visible:outline-on-surface"
                 >
-                  <PencilIcon className="h-5 w-5" />
+                  <PencilIcon className="h-4 w-4" />
                   編集
                 </button>
               </li>

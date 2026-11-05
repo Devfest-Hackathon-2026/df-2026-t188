@@ -9,7 +9,6 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ChevronIcon } from "@/components/ui/icons";
-import { TopBar } from "@/components/ui/TopBar";
 import type {
   FamilyAnswers,
   IntakeState,
@@ -36,8 +35,10 @@ type DoctorScreenProps = {
 
 const RESPONDENT_LABEL = { patient: "本人", family: "家族・介護者" } as const;
 
-// 「経過」に並べる項目と、「薬・持病・アレルギー」に並べる項目（どちらも家族の回答を入力どおりに出す）
-const COURSE_KEYS = ["onset", "onsetDetail", "course", "foodIntake", "differences"];
+// 「経過」に並べる項目と、「薬・持病・アレルギー」に並べる項目（どちらも家族の回答を入力どおりに出す）。
+// 点と線で見せるのは、入力された「いつから」「くわしい時刻」「経過」だけ。時刻を作ったり推測したりしない
+const TIMELINE_KEYS = ["onset", "onsetDetail", "course"];
+const COURSE_OTHER_KEYS = ["foodIntake", "differences"];
 const VERBATIM_KEYS = ["medications", "conditions", "allergies"];
 
 function pickRows(rows: AnswerRow[], keys: string[]): AnswerRow[] {
@@ -57,6 +58,28 @@ function RowList({ rows }: { rows: AnswerRow[] }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+// 経過を、点と線で上から順に見せる。値は入力どおりに表示する
+function Timeline({ rows }: { rows: AnswerRow[] }) {
+  return (
+    <ol className="mt-3 ml-1.5 flex flex-col gap-4 border-l-2 border-outline-variant pl-5">
+      {rows.map((row) => (
+        <li key={row.key} className="relative">
+          <span
+            aria-hidden="true"
+            className="absolute top-1.5 -left-[27px] h-3 w-3 rounded-full bg-primary"
+          />
+          <p className="text-support font-bold text-on-surface-variant">
+            {row.label}
+          </p>
+          <p className="mt-1 text-body font-medium">
+            <AnswerValue row={row} />
+          </p>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -130,7 +153,6 @@ export function DoctorScreen({
 
   return (
     <>
-      <TopBar tone="inverse">医師に見せる画面</TopBar>
       {/* 読み上げ機能に、要約の作成中と完了を伝える */}
       <p role="status" aria-live="polite" className="sr-only">
         {statusMessage}
@@ -165,7 +187,7 @@ export function DoctorScreen({
             <div className="mt-3">
               <Badge kind="patient">本人</Badge>
               {patientChief.state === "answered" ? (
-                <blockquote className="mt-2 border-l-4 border-primary pl-3 text-title break-words whitespace-pre-wrap">
+                <blockquote className="mt-2 border-l-4 border-patient pl-3 text-title break-words whitespace-pre-wrap">
                   「{patientChief.text}」
                 </blockquote>
               ) : (
@@ -189,7 +211,10 @@ export function DoctorScreen({
               経過
               <Badge kind="family">家族</Badge>
             </h2>
-            <RowList rows={pickRows(familyRows, COURSE_KEYS)} />
+            <Timeline rows={pickRows(familyRows, TIMELINE_KEYS)} />
+            <div className="mt-4 border-t border-outline-variant">
+              <RowList rows={pickRows(familyRows, COURSE_OTHER_KEYS)} />
+            </div>
           </Card>
 
           <Card tone="caution">

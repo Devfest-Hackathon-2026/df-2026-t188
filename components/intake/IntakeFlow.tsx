@@ -10,6 +10,7 @@ import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
 import { StepProgress } from "@/components/ui/StepProgress";
+import { TopBar, type TopBarTone } from "@/components/ui/TopBar";
 import type {
   FamilyAnswers,
   IntakeState,
@@ -26,6 +27,15 @@ const STEPS: { key: Step; label: string; fullName: string }[] = [
   { key: "review", label: "見直し", fullName: "入力内容の見直し" },
   { key: "doctor", label: "医師", fullName: "医師に見せる" },
 ];
+
+// 上の帯に出す画面名と色。だれが答えている画面かを、色と文字の両方で示す
+const SCREEN_BAND: Record<Step, { title: string; tone: TopBarTone }> = {
+  ability: { title: "はじめの確認", tone: "neutral" },
+  patient: { title: "本人が答えています", tone: "patient" },
+  family: { title: "家族・介護者が答えています", tone: "family" },
+  review: { title: "入力内容の見直し", tone: "neutral" },
+  doctor: { title: "医師に見せる画面", tone: "neutral" },
+};
 
 function stepIndex(step: Step): number {
   return STEPS.findIndex((item) => item.key === step);
@@ -188,7 +198,13 @@ export function IntakeFlow() {
       ref={mainRef}
       className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-x-clip text-body"
     >
-      <StepProgress {...flowPosition(state)} />
+      {/* 上の帯（STEP、バー、画面名）。スクロールしても上に残る */}
+      <header className="sticky top-0 z-20 bg-surface-container-lowest shadow-card">
+        <StepProgress {...flowPosition(state)} />
+        <TopBar tone={SCREEN_BAND[state.step].tone}>
+          {SCREEN_BAND[state.step].title}
+        </TopBar>
+      </header>
       <Breadcrumb items={breadcrumbItems(state)} onSelect={goToStep} />
       <div
         key={state.step}

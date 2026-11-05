@@ -200,10 +200,10 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
                   <li key={index} className="break-words whitespace-pre-wrap">
                     <span className="font-bold">{item.topic}</span>
                     <br />
-                    <span className="font-bold text-primary">本人：</span>
+                    <span className="font-bold text-patient">本人：</span>
                     {item.patient}
                     <br />
-                    <span className="font-bold text-secondary">介在者：</span>
+                    <span className="font-bold text-family">介在者：</span>
                     {item.family}
                   </li>
                 ))}
