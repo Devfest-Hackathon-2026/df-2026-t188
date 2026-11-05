@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "準備中",
+  title: "受診前の問診",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
