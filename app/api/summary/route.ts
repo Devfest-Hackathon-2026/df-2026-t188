@@ -12,7 +12,8 @@ function respond(body: SummaryApiResponse, status: number): Response {
   });
 }
 
-// 入力内容や要約の中身はログに出さない。失敗したときに、エラーの種類だけを出す
+// 入力内容や要約の中身はログに出さない。
+// ログに出すのは、成功か失敗か（失敗のときはエラーの種類）、かかった秒数、やり直したかだけ
 export async function POST(request: Request): Promise<Response> {
   let body: unknown;
   try {
@@ -26,15 +27,26 @@ export async function POST(request: Request): Promise<Response> {
   const input = parseSummaryInput(body);
   if (!input || isEmptySummaryInput(input)) return respond({ ok: false }, 400);
 
-  const result = await generateSummary(input);
-  if (!result.ok) {
-    console.error(
-      `[summary] failed: ${result.kind}${
-        result.status === undefined ? "" : ` (status ${result.status})`
-      }`,
-    );
-    return respond({ ok: false }, 502);
+  // request.signal は、ブラウザが接続を切った（画面を離れた）ときに知らせる
+  const result = await generateSummary(input, request.signal);
+  const timing = `in ${(result.elapsedMs / 1000).toFixed(1)}s (retried: ${
+    result.retried ? "yes" : "no"
+  })`;
+
+  if (result.ok) {
+    console.log(`[summary] ok ${timing}`);
+    return respond({ ok: true, summary: result.summary }, 200);
   }
 
-  return respond({ ok: true, summary: result.summary }, 200);
+  if (result.kind === "client_gone") {
+    console.log(`[summary] stopped: client disconnected ${timing}`);
+    return respond({ ok: false }, 499);
+  }
+
+  console.error(
+    `[summary] failed: ${result.kind}${
+      result.status === undefined ? "" : ` (status ${result.status})`
+    } ${timing}`,
+  );
+  return respond({ ok: false }, 502);
 }

@@ -14,7 +14,8 @@ import {
 } from "@/lib/summary/types";
 import { parseSummary } from "@/lib/summary/validate";
 
-const CLIENT_TIMEOUT_MS = 25_000;
+// ブラウザ側で待つ時間。サーバーは、やり直しも含めて最大 45 秒待つので、それより長くする
+const CLIENT_TIMEOUT_MS = 50_000;
 
 // 同じ内容を送り直さないよう、送った内容（key）と要約をセットで持つ
 export type SummaryCache = { key: string; summary: Summary };

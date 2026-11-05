@@ -1,26 +1,44 @@
 // Vertex AI の Gemini を呼んで要約を作る。サーバー側だけで使う。
 // 認証は Application Default Credentials。APIキーは使わない。
 // 入力内容や要約の中身はログに出さない。
-import { ApiError, GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { parseSummary } from "./validate";
 import type { Summary, SummaryInput } from "./types";
 
 const PROJECT = "hinakai";
 const LOCATION = "global";
 const MODEL = "gemini-3.8-flash";
-const TIMEOUT_MS = 20_000;
 const MAX_OUTPUT_TOKENS = 4096;
+
+// 考える量（thinking）。gemini-3.8-flash で選べるのは LOW・MEDIUM・HIGH で、
+// MINIMAL とオフは使えない。速さのために、いちばん少ない LOW にしている
+// （何も指定しないと MEDIUM になる）
+const THINKING_LEVEL = ThinkingLevel.LOW;
+
+// 待ち時間。1回目は 25 秒で時間切れにする。
+// やり直しも含めた全体の上限は 45 秒で、やり直すときは残りの時間だけ待つ。
+// 残りが 5 秒未満なら、やり直さずに失敗にする
+const FIRST_ATTEMPT_TIMEOUT_MS = 25_000;
+const TOTAL_TIMEOUT_MS = 45_000;
+const MIN_RETRY_TIME_MS = 5_000;
 
 export type SummaryFailure =
   | "timeout"
   | "api_error"
   | "empty_output"
   | "invalid_json"
-  | "invalid_shape";
+  | "invalid_shape"
+  | "client_gone"; // ブラウザが接続を切った（画面を離れた）
 
-export type SummaryResult =
+type AttemptResult =
   | { ok: true; summary: Summary }
   | { ok: false; kind: SummaryFailure; status?: number };
+
+// elapsedMs と retried は、速さを測るためのログに使う（入力や要約の中身は含めない）
+export type SummaryResult = AttemptResult & {
+  elapsedMs: number;
+  retried: boolean;
+};
 
 const SYSTEM_INSTRUCTION = `あなたは、受診前の問診の回答を、医師に説明するための短い文章に整理する係です。
 
@@ -100,10 +118,57 @@ function buildPrompt(input: SummaryInput): string {
   ].join("\n\n");
 }
 
+// やり直す失敗かどうか。
+// やり直すのは、時間切れ、通信がつながらない、混雑（429）、サーバー側のエラー（500番台）だけ。
+// 設定や権限の誤り（400・403・404 など）と、形の違う出力は、やり直しても直らないのでやり直さない
+function isRetryable(result: AttemptResult): boolean {
+  if (result.ok) return false;
+  if (result.kind === "timeout") return true;
+  if (result.kind !== "api_error") return false;
+  return (
+    result.status === undefined || result.status === 429 || result.status >= 500
+  );
+}
+
+// 要約を作る。時間切れか一時的な通信エラーのときだけ、1回だけ自動でやり直す。
+// clientSignal は、ブラウザが接続を切ったことを知らせる。切られたら、やり直さずに止める
 export async function generateSummary(
   input: SummaryInput,
+  clientSignal?: AbortSignal,
 ): Promise<SummaryResult> {
-  const signal = AbortSignal.timeout(TIMEOUT_MS);
+  const startedAt = Date.now();
+  let retried = false;
+
+  let result = await attemptSummary(input, FIRST_ATTEMPT_TIMEOUT_MS, clientSignal);
+
+  if (isRetryable(result) && !clientSignal?.aborted) {
+    const remainingMs = TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remainingMs >= MIN_RETRY_TIME_MS) {
+      retried = true;
+      result = await attemptSummary(input, remainingMs, clientSignal);
+    }
+  }
+
+  return { ...result, elapsedMs: Date.now() - startedAt, retried };
+}
+
+// Gemini を1回呼ぶ。timeoutMs を過ぎるか、ブラウザが接続を切ったら、呼び出しを中止する
+async function attemptSummary(
+  input: SummaryInput,
+  timeoutMs: number,
+  clientSignal?: AbortSignal,
+): Promise<AttemptResult> {
+  if (clientSignal?.aborted) return { ok: false, kind: "client_gone" };
+
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const stopForClient = () => controller.abort();
+  clientSignal?.addEventListener("abort", stopForClient, { once: true });
+
   let text: string | undefined;
 
   try {
@@ -116,17 +181,22 @@ export async function generateSummary(
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         responseMimeType: "application/json",
         responseJsonSchema: RESPONSE_JSON_SCHEMA,
-        abortSignal: signal,
+        thinkingConfig: { thinkingLevel: THINKING_LEVEL },
+        abortSignal: controller.signal,
       },
     });
     text = response.text;
   } catch (error) {
-    if (signal.aborted) return { ok: false, kind: "timeout" };
+    if (clientSignal?.aborted) return { ok: false, kind: "client_gone" };
+    if (timedOut) return { ok: false, kind: "timeout" };
     return {
       ok: false,
       kind: "api_error",
       status: error instanceof ApiError ? error.status : undefined,
     };
+  } finally {
+    clearTimeout(timer);
+    clientSignal?.removeEventListener("abort", stopForClient);
   }
 
   if (!text) return { ok: false, kind: "empty_output" };
