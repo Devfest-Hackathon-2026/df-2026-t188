@@ -1,4 +1,5 @@
-// 画面の上に常に出す帯。だれが答えている画面かを、色と文字の両方で示す
+// 画面の上に常に出す帯。だれが答えている画面かを、色と文字の両方で示す。
+// 画面の見出しでもあり、画面が切り替わったときにフォーカスを受け取る
 type Tone = "primary" | "secondary" | "inverse";
 
 const TONE_CLASS: Record<Tone, string> = {
@@ -9,10 +10,12 @@ const TONE_CLASS: Record<Tone, string> = {
 
 export function TopBar({ tone, children }: { tone: Tone; children: string }) {
   return (
-    <p
-      className={`sticky top-0 z-10 px-4 py-4 text-center text-title ${TONE_CLASS[tone]}`}
+    <h1
+      tabIndex={-1}
+      data-screen-heading
+      className={`sticky top-0 z-10 px-4 py-4 text-center text-title outline-none ${TONE_CLASS[tone]}`}
     >
       {children}
-    </p>
+    </h1>
   );
 }

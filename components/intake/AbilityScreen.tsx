@@ -24,7 +24,9 @@ export function AbilityScreen({
 
   return (
     <div className="flex flex-col gap-8 px-4 py-8">
-      <h1 className="text-headline">本人は自分の症状を説明できますか？</h1>
+      <h1 tabIndex={-1} data-screen-heading className="text-headline outline-none">
+        本人は自分の症状を説明できますか？
+      </h1>
 
       <div className="flex flex-col gap-4">
         <Button

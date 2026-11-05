@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AbilityScreen } from "@/components/intake/AbilityScreen";
 import { DoctorScreen } from "@/components/intake/DoctorScreen";
 import { FamilyScreen } from "@/components/intake/FamilyScreen";
@@ -72,6 +72,19 @@ export function IntakeFlow() {
   // 要約も画面の中（Reactの状態）だけで持つ。閉じたら消える
   const [summaryCache, setSummaryCache] = useState<SummaryCache | null>(null);
 
+  // 画面（ステップ）が切り替わるたびに、ページの一番上を表示し、
+  // 新しい画面の見出しにフォーカスを移す（読み上げ機能に、画面が変わったことを伝える）
+  const mainRef = useRef<HTMLElement>(null);
+  const shownStep = useRef(state.step);
+  useEffect(() => {
+    if (shownStep.current === state.step) return;
+    shownStep.current = state.step;
+    window.scrollTo(0, 0);
+    mainRef.current
+      ?.querySelector<HTMLElement>("[data-screen-heading]")
+      ?.focus({ preventScroll: true });
+  }, [state.step]);
+
   const hasPatientInput =
     state.canSelfReport === "able" &&
     Object.values(state.patient).some(
@@ -89,7 +102,10 @@ export function IntakeFlow() {
     }));
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col text-body">
+    <main
+      ref={mainRef}
+      className="mx-auto flex w-full max-w-md flex-1 flex-col text-body"
+    >
       {state.step === "ability" && (
         <AbilityScreen
           canSelfReport={state.canSelfReport}
