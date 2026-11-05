@@ -4,6 +4,9 @@ import {
   useSummary,
   type SummaryCache,
 } from "@/components/intake/SummarySection";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { TopBar } from "@/components/ui/TopBar";
 import type {
   FamilyAnswers,
   IntakeState,
@@ -35,25 +38,57 @@ const RESPONDENT_LABEL = { patient: "本人", family: "家族・介護者" } as 
 // AI に送らず、入力どおりに表示する項目
 const VERBATIM_KEYS = ["medications", "conditions", "allergies"];
 
+// 未回答・回答困難・わからない（と回答）の表示。必須の項目は「不明」として注意の色にする
+function MissingLabel({ row, asUnknown }: { row: AnswerRow; asUnknown: boolean }) {
+  if (row.state === "answered") return null;
+  return asUnknown ? (
+    <span className="inline-block rounded-sm bg-caution-container px-2 py-1 text-label font-bold text-on-caution-container">
+      {missingStateLabel(row.state, true)}
+    </span>
+  ) : (
+    <span className="text-on-surface-variant">
+      {missingStateLabel(row.state, false)}
+    </span>
+  );
+}
+
 // 回答は入力どおりに表示する。言い換えや要約はしない
 function RowView({ row, asUnknown }: { row: AnswerRow; asUnknown: boolean }) {
   return (
-    <div className="py-3">
-      <dt className="text-base font-bold">{row.label}</dt>
-      {row.state === "answered" ? (
-        <dd className="mt-1 text-lg break-words whitespace-pre-wrap">
-          {row.text}
-        </dd>
-      ) : (
-        <dd
-          className={`mt-1 text-lg font-bold ${
-            asUnknown ? "text-red-700" : "text-zinc-600"
-          }`}
-        >
-          {missingStateLabel(row.state, asUnknown)}
-        </dd>
-      )}
+    <div className="py-4">
+      <dt className="text-label font-bold">{row.label}</dt>
+      <dd className="mt-1 text-body break-words whitespace-pre-wrap">
+        {row.state === "answered" ? (
+          row.text
+        ) : (
+          <MissingLabel row={row} asUnknown={asUnknown} />
+        )}
+      </dd>
     </div>
+  );
+}
+
+// 主訴。入力された文章をそのまま、一番大きな文字で表示する（AI の要約は使わない）
+function ChiefView({ row, tone }: { row: AnswerRow; tone: "primary" | "secondary" }) {
+  return (
+    <Card tone={tone} as="div">
+      <dt
+        className={`text-label font-bold ${
+          tone === "primary"
+            ? "text-on-primary-container"
+            : "text-on-secondary-container"
+        }`}
+      >
+        {row.label}
+      </dt>
+      <dd className="mt-2 text-headline break-words whitespace-pre-wrap">
+        {row.state === "answered" ? (
+          row.text
+        ) : (
+          <MissingLabel row={row} asUnknown />
+        )}
+      </dd>
+    </Card>
   );
 }
 
@@ -85,20 +120,24 @@ export function DoctorScreen({
 
   return (
     <>
-      <p className="sticky top-0 z-10 bg-zinc-800 px-4 py-3 text-center text-xl font-bold text-white">
-        医師に見せる画面
-      </p>
+      <TopBar tone="inverse">医師に見せる画面</TopBar>
       <div className="flex flex-col gap-6 px-4 py-6">
+        <section>
+          <h2 className="mb-2 text-title">主訴（入力されたとおり）</h2>
+          <dl className="flex flex-col gap-2">
+            <ChiefView row={patientChiefRow(patient)} tone="primary" />
+            <ChiefView row={familyChiefRow(family)} tone="secondary" />
+          </dl>
+        </section>
+
         <SummarySection status={summaryStatus} />
 
-        <section className="rounded-xl border-4 border-red-700 p-4">
-          <h2 className="text-xl font-bold text-red-700">
-            不明の項目（{unknownRows.length}件）
-          </h2>
+        <Card tone="caution">
+          <h2 className="text-title">不明の項目（{unknownRows.length}件）</h2>
           {unknownRows.length === 0 ? (
-            <p className="mt-2 text-lg">必須の項目に不明はありません。</p>
+            <p className="mt-2 text-body">必須の項目に不明はありません。</p>
           ) : (
-            <ul className="mt-2 flex flex-col gap-2 text-lg">
+            <ul className="mt-2 flex flex-col gap-2 text-body">
               {unknownRows.map((row) => (
                 <li key={row.key}>
                   <span className="font-bold">
@@ -111,23 +150,23 @@ export function DoctorScreen({
               ))}
             </ul>
           )}
-        </section>
+        </Card>
 
-        <section className="rounded-xl border-l-8 border-emerald-700 bg-emerald-700/10 px-4 py-3">
-          <h2 className="text-xl font-bold text-emerald-700">
+        <Card tone="secondary">
+          <h2 className="text-title text-on-secondary-container">
             薬・持病・アレルギー
           </h2>
-          <p className="mt-1 text-base">
+          <p className="mt-1 text-support text-on-surface-variant">
             家族・介護者が入力したとおりに表示しています。AIは通していません。
           </p>
-          <dl className="divide-y divide-emerald-700/30">
+          <dl className="divide-y divide-outline-variant">
             {verbatimRows.map((row) => (
               <RowView key={row.key} row={row} asUnknown={row.required} />
             ))}
           </dl>
-        </section>
+        </Card>
 
-        <section className="rounded-xl border-2 border-zinc-400">
+        <Card tone="outlined" className="p-0">
           <h2>
             <button
               type="button"
@@ -135,70 +174,65 @@ export function DoctorScreen({
               aria-controls="original-answers"
               disabled={!hasSummary}
               onClick={() => setIsOpenedByUser((isOpen) => !isOpen)}
-              className="min-h-14 w-full px-4 py-3 text-left text-xl font-bold"
+              className="flex min-h-14 w-full items-center gap-2 rounded-lg px-4 py-4 text-left text-title focus-visible:outline-2 focus-visible:outline-on-surface"
             >
-              {hasSummary ? (isDetailOpen ? "▼ " : "▶ ") : ""}
-              詳しく見る（入力されたとおりの回答すべて）
+              {hasSummary && (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className={`h-6 w-6 shrink-0 ${isDetailOpen ? "rotate-90" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              )}
+              詳しく見る（入力されたとおりの回答）
             </button>
           </h2>
           {isDetailOpen && (
-            <div id="original-answers" className="flex flex-col gap-6 px-4 pb-4">
-              <section>
-                <h3 className="mb-3 text-xl font-bold">主訴</h3>
-                <dl className="flex flex-col gap-3">
-                  <div className="rounded-xl border-l-8 border-blue-700 bg-blue-700/10 px-4">
-                    <RowView row={patientChiefRow(patient)} asUnknown />
-                  </div>
-                  <div className="rounded-xl border-l-8 border-emerald-700 bg-emerald-700/10 px-4">
-                    <RowView row={familyChiefRow(family)} asUnknown />
-                  </div>
-                </dl>
-              </section>
-
-              <section className="rounded-xl border-l-8 border-blue-700 bg-blue-700/10 px-4 py-3">
-                <h3 className="text-xl font-bold text-blue-700">本人の回答</h3>
+            <div id="original-answers" className="flex flex-col gap-4 px-4 pb-4">
+              <Card tone="primary">
+                <h3 className="text-title text-on-primary-container">
+                  本人の回答
+                </h3>
                 {canSelfReport === "difficult" && (
-                  <p className="mt-2 text-base">
+                  <p className="mt-2 text-support text-on-surface-variant">
                     最初の質問で「本人が説明するのは難しい」が選ばれたため、本人の回答はすべて「回答困難」です。
                   </p>
                 )}
-                <dl className="divide-y divide-blue-700/30">
+                <dl className="divide-y divide-outline-variant">
                   {buildPatientRows(patient).map((row) => (
                     <RowView key={row.key} row={row} asUnknown={row.required} />
                   ))}
                 </dl>
-              </section>
+              </Card>
 
-              <section className="rounded-xl border-l-8 border-emerald-700 bg-emerald-700/10 px-4 py-3">
-                <h3 className="text-xl font-bold text-emerald-700">
+              <Card tone="secondary">
+                <h3 className="text-title text-on-secondary-container">
                   家族・介護者の回答
                 </h3>
-                <dl className="divide-y divide-emerald-700/30">
+                <dl className="divide-y divide-outline-variant">
                   {familyRows.map((row) => (
                     <RowView key={row.key} row={row} asUnknown={row.required} />
                   ))}
                 </dl>
-              </section>
+              </Card>
             </div>
           )}
-        </section>
+        </Card>
 
-        <div className="flex flex-col gap-3">
-          <p className="text-lg font-bold">戻って直す</p>
-          <button
-            type="button"
-            onClick={onEditPatient}
-            className="min-h-14 rounded-xl border-2 border-blue-700 bg-background px-3 py-2 text-lg font-medium"
-          >
+        <div className="flex flex-col gap-4">
+          <p className="text-title">戻って直す</p>
+          <Button variant="outlined" onClick={onEditPatient}>
             本人の回答を直す
-          </button>
-          <button
-            type="button"
-            onClick={onEditFamily}
-            className="min-h-14 rounded-xl border-2 border-emerald-700 bg-background px-3 py-2 text-lg font-medium"
-          >
+          </Button>
+          <Button variant="outlined" tone="secondary" onClick={onEditFamily}>
             家族・介護者の回答を直す
-          </button>
+          </Button>
         </div>
       </div>
     </>

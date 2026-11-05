@@ -1,26 +1,170 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * デザインの決まり（Material Design 3 に合わせた色・文字・角の丸み）。
+ * 色を差し替えるときは、このファイルだけを直す。
+ * 各画面では bg-primary、text-on-surface、text-title、rounded-lg のような名前で使う。
+ * 明るい表示だけを対象にしている（ダークモードは未対応）。
+ */
+@theme {
+  /* 主となる色：本人の画面と主な操作 */
+  --color-primary: #36618e;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d1e4ff;
+  --color-on-primary-container: #194975;
+
+  /* 家族・介護者の画面と回答 */
+  --color-secondary: #2e6b4a;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #b4f0cb;
+  --color-on-secondary-container: #0f5132;
+
+  /* 注意（「不明」など。間違いではないので error の赤は使わない） */
+  --color-caution: #7a5700;
+  --color-caution-container: #ffdea3;
+  --color-on-caution-container: #5b4300;
+
+  /* エラー（文字数の上限超えのお知らせだけに使う） */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* 背景・面・文字・枠線 */
+  --color-surface: #f8f9ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container: #eceef4;
+  --color-surface-container-highest: #e0e2e8;
+  --color-on-surface: #191c20;
+  --color-on-surface-variant: #43474e;
+  --color-outline: #73777f;
+  --color-outline-variant: #c3c7cf;
+  --color-inverse-surface: #2e3135;
+  --color-inverse-on-surface: #eff0f7;
+
+  /* 文字の大きさ（M3 の型より一段大きめ。本文は 18px） */
+  --text-headline: 1.75rem;
+  --text-headline--line-height: 2.25rem;
+  --text-headline--font-weight: 700;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.875rem;
+  --text-title--font-weight: 700;
+  --text-body: 1.125rem;
+  --text-body--line-height: 1.75rem;
+  --text-body--font-weight: 400;
+  --text-label: 1.125rem;
+  --text-label--line-height: 1.5rem;
+  --text-label--font-weight: 500;
+  --text-support: 1rem;
+  --text-support--line-height: 1.5rem;
+  --text-support--font-weight: 400;
+
+  /* 角の丸み（M3 の extra-small・small・medium・large） */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans:
+    var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic UI", "Meiryo",
+    sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+/*
+ * 痛みの程度のスライダー（M3 のスライダーに近い見た目）。
+ * つまみの当たり判定は幅 36px のまま、見た目だけ細い縦棒にしている。
+ * 未回答（data-answered="false"）のときは、つまみと色の付いた線を出さない。
+ */
+.pain-slider {
+  --ratio: 0;
+  width: 100%;
+  height: 3.5rem;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.pain-slider:focus-visible {
+  outline: 2px solid var(--color-on-surface);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.pain-slider::-webkit-slider-runnable-track {
+  height: 1rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) calc(18px + var(--ratio) * (100% - 36px)),
+    var(--color-primary-container) 0
+  );
+}
+
+.pain-slider[data-answered="false"]::-webkit-slider-runnable-track {
+  background: var(--color-primary-container);
+}
+
+.pain-slider::-webkit-slider-thumb {
+  width: 36px;
+  height: 44px;
+  margin-top: -14px;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    transparent 10px,
+    var(--color-surface) 10px 16px,
+    var(--color-primary) 16px 20px,
+    var(--color-surface) 20px 26px,
+    transparent 26px
+  );
+}
+
+.pain-slider[data-answered="false"]::-webkit-slider-thumb {
+  opacity: 0;
+}
+
+.pain-slider::-moz-range-track {
+  height: 1rem;
+  border-radius: 9999px;
+  background: var(--color-primary-container);
+}
+
+.pain-slider::-moz-range-progress {
+  height: 1rem;
+  border-radius: 9999px;
+  background: var(--color-primary);
+}
+
+.pain-slider[data-answered="false"]::-moz-range-progress {
+  background: transparent;
+}
+
+.pain-slider::-moz-range-thumb {
+  width: 36px;
+  height: 44px;
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(
+    to right,
+    transparent 10px,
+    var(--color-surface) 10px 16px,
+    var(--color-primary) 16px 20px,
+    var(--color-surface) 20px 26px,
+    transparent 26px
+  );
+}
+
+.pain-slider[data-answered="false"]::-moz-range-thumb {
+  opacity: 0;
 }

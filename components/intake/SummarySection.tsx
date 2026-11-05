@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import {
   findOverLimitFields,
   isEmptySummaryInput,
@@ -106,65 +108,71 @@ const RESPONDENT_LABEL = { patient: "本人", family: "家族・介護者" } as 
 
 function SummaryText({ text, emptyText }: { text: string; emptyText: string }) {
   return text === "" ? (
-    <p className="mt-1 text-lg text-zinc-600">{emptyText}</p>
+    <p className="mt-1 text-body text-on-surface-variant">{emptyText}</p>
   ) : (
-    <p className="mt-1 text-lg break-words whitespace-pre-wrap">{text}</p>
+    <p className="mt-1 text-body break-words whitespace-pre-wrap">{text}</p>
   );
 }
 
+// 要約の中のまとまり。元の回答のカード（色で塗った面）と区別するため、
+// 白い面に、左の線の色でだれの回答の要約かを示す
+const SUMMARY_BLOCK_CLASS =
+  "rounded-md border-l-8 bg-surface-container-lowest px-4 py-4";
+
 export function SummarySection({ status }: { status: SummaryStatus }) {
   return (
-    <section className="rounded-xl border-2 border-zinc-400 p-4">
-      <h2 className="text-xl font-bold">AIによる要約</h2>
-      <p className="mt-2 rounded-lg bg-zinc-200 p-2 text-base font-bold text-zinc-900">
+    <Card tone="surface">
+      <h2 className="flex items-center gap-2 text-title">
+        <span className="rounded-sm bg-inverse-surface px-2 py-1 text-label font-bold text-inverse-on-surface">
+          AI
+        </span>
+        AIによる要約
+      </h2>
+      <p className="mt-2 rounded-sm bg-surface-container-highest p-2 text-body font-bold">
         患者・家族が入力した内容を AI が整理したものです。診断ではありません。
       </p>
 
       {status.kind === "loading" && (
-        <p role="status" className="mt-3 text-lg">
+        <p role="status" className="mt-4 text-body">
           要約を作っています…
         </p>
       )}
 
       {status.kind === "empty" && (
-        <p className="mt-3 text-lg">要約する回答がありません。</p>
+        <p className="mt-4 text-body">要約する回答がありません。</p>
       )}
 
       {status.kind === "failed" && (
-        <div role="alert" className="mt-3 flex flex-col gap-3">
-          <p className="text-lg font-bold text-red-700">
+        <div role="alert" className="mt-4 flex flex-col gap-2">
+          <p className="rounded-sm bg-caution-container p-2 text-body font-bold text-on-caution-container">
             要約を作れませんでした。下の元の回答をご覧ください
           </p>
-          <button
-            type="button"
-            onClick={status.retry}
-            className="min-h-14 rounded-xl border-2 border-zinc-400 bg-background px-3 py-2 text-lg font-medium"
-          >
+          <Button variant="text" onClick={status.retry}>
             もう一度試す
-          </button>
+          </Button>
         </div>
       )}
 
       {status.kind === "over_limit" && (
-        <div role="alert" className="mt-3">
-          <p className="text-lg font-bold text-red-700">
+        <Card tone="error" as="div" role="alert" className="mt-4">
+          <p className="text-body font-bold">
             文字数が上限（{SUMMARY_TEXT_LIMIT}
             文字）を超えている欄があるため、要約を作っていません。下の元の回答をご覧ください
           </p>
-          <ul className="mt-2 list-disc pl-6 text-lg">
+          <ul className="mt-2 list-disc pl-6 text-body">
             {status.fields.map((field) => (
               <li key={`${field.respondent}-${field.label}`}>
                 {RESPONDENT_LABEL[field.respondent]}：{field.label}
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
 
       {status.kind === "ready" && (
-        <div className="mt-3 flex flex-col gap-3">
-          <div className="rounded-xl border-l-8 border-blue-700 bg-blue-700/10 px-4 py-3">
-            <h3 className="text-base font-bold text-blue-700">
+        <div className="mt-4 flex flex-col gap-2">
+          <div className={`${SUMMARY_BLOCK_CLASS} border-primary`}>
+            <h3 className="text-label font-bold text-primary">
               本人の回答の要約
             </h3>
             <SummaryText
@@ -172,8 +180,8 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
               emptyText="要約する本人の回答がありません。"
             />
           </div>
-          <div className="rounded-xl border-l-8 border-emerald-700 bg-emerald-700/10 px-4 py-3">
-            <h3 className="text-base font-bold text-emerald-700">
+          <div className={`${SUMMARY_BLOCK_CLASS} border-secondary`}>
+            <h3 className="text-label font-bold text-secondary">
               介在者（家族・介護者）の回答の要約
             </h3>
             <SummaryText
@@ -181,22 +189,22 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
               emptyText="要約する介在者の回答がありません。"
             />
           </div>
-          <div className="rounded-xl border-2 border-zinc-400 px-4 py-3">
-            <h3 className="text-base font-bold">
+          <div className={`${SUMMARY_BLOCK_CLASS} border-outline`}>
+            <h3 className="text-label font-bold">
               本人と介在者で食い違っている点（AIが見つけたもの）
             </h3>
             {status.summary.discrepancies.length === 0 ? (
-              <p className="mt-1 text-lg text-zinc-600">なし</p>
+              <p className="mt-1 text-body text-on-surface-variant">なし</p>
             ) : (
-              <ul className="mt-1 flex flex-col gap-3 text-lg">
+              <ul className="mt-1 flex flex-col gap-4 text-body">
                 {status.summary.discrepancies.map((item, index) => (
                   <li key={index} className="break-words whitespace-pre-wrap">
                     <span className="font-bold">{item.topic}</span>
                     <br />
-                    <span className="text-blue-700">本人：</span>
+                    <span className="font-bold text-primary">本人：</span>
                     {item.patient}
                     <br />
-                    <span className="text-emerald-700">介在者：</span>
+                    <span className="font-bold text-secondary">介在者：</span>
                     {item.family}
                   </li>
                 ))}
@@ -205,6 +213,6 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

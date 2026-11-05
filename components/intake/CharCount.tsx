@@ -8,7 +8,9 @@ export function CharCount({ text }: { text: string }) {
   return (
     <p
       aria-live="polite"
-      className={`mt-1 text-base ${isOver ? "font-bold text-red-700" : ""}`}
+      className={`mt-2 text-support ${
+        isOver ? "font-bold text-error" : "text-on-surface-variant"
+      }`}
     >
       {count}／{SUMMARY_TEXT_LIMIT}文字
       {isOver &&

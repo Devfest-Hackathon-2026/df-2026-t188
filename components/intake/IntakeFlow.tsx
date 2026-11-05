@@ -89,7 +89,7 @@ export function IntakeFlow() {
     }));
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col text-lg">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col text-body">
       {state.step === "ability" && (
         <AbilityScreen
           canSelfReport={state.canSelfReport}

@@ -1,6 +1,8 @@
 import { CharCount } from "@/components/intake/CharCount";
 import { MultiSelect } from "@/components/intake/MultiSelect";
 import { PainSlider } from "@/components/intake/PainSlider";
+import { Button } from "@/components/ui/Button";
+import { TopBar } from "@/components/ui/TopBar";
 import {
   BODY_PARTS,
   EXCLUSIVE_BODY_PARTS,
@@ -40,9 +42,7 @@ export function PatientScreen({
 
   return (
     <>
-      <p className="sticky top-0 z-10 bg-blue-700 px-4 py-3 text-center text-xl font-bold text-white">
-        本人が答えています
-      </p>
+      <TopBar tone="primary">本人が答えています</TopBar>
       <div className="flex flex-col gap-10 px-4 py-6">
         <MultiSelect
           legend="どこが痛いですか？（いくつでも選べます）"
@@ -68,10 +68,7 @@ export function PatientScreen({
         />
 
         <div>
-          <label
-            htmlFor="chief-complaint"
-            className="mb-3 block text-xl font-bold"
-          >
+          <label htmlFor="chief-complaint" className="mb-4 block text-title">
             今いちばん困っていること（書かなくても大丈夫です）
           </label>
           <textarea
@@ -88,26 +85,16 @@ export function PatientScreen({
                     : { respondent: "patient", status: "answered", value: text },
               });
             }}
-            className="w-full rounded-xl border-2 border-zinc-400 bg-background p-3 text-lg"
+            className="w-full rounded-xs border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-primary"
           />
           <CharCount text={chiefComplaintText} />
         </div>
 
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={onNext}
-            className="min-h-14 rounded-xl bg-blue-700 px-3 py-2 text-lg font-bold text-white"
-          >
-            次へ（家族・介護者の入力）
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="min-h-14 rounded-xl border-2 border-zinc-400 bg-background px-3 py-2 text-lg font-medium"
-          >
+        <div className="flex flex-col gap-4">
+          <Button onClick={onNext}>次へ（家族・介護者の入力）</Button>
+          <Button variant="outlined" onClick={onBack}>
             最初の質問にもどる
-          </button>
+          </Button>
         </div>
       </div>
     </>

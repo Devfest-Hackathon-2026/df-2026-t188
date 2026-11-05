@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { CharCount } from "@/components/intake/CharCount";
 import { SingleSelect } from "@/components/intake/SingleSelect";
+import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
+import { TopBar } from "@/components/ui/TopBar";
 import {
   COURSE_OPTIONS,
   FOOD_INTAKE_OPTIONS,
@@ -16,7 +19,9 @@ import type {
 const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
 
 const TEXT_INPUT_CLASS =
-  "w-full rounded-xl border-2 border-zinc-400 bg-background p-3 text-lg";
+  "w-full rounded-xs border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-secondary";
+
+const FIELD_LABEL_CLASS = "mb-4 block text-title";
 
 type FamilyScreenProps = {
   answers: FamilyAnswers;
@@ -46,14 +51,6 @@ function choiceOf<T>(answer: FamilyAnswer<T>): T | null {
   return answer.status === "answered" ? answer.value : null;
 }
 
-function toggleButtonClass(isSelected: boolean): string {
-  return `min-h-14 rounded-xl border-2 px-3 py-2 text-lg font-medium ${
-    isSelected
-      ? "border-emerald-700 bg-emerald-700 text-white"
-      : "border-zinc-400 bg-background text-foreground"
-  }`;
-}
-
 type TextFieldProps = {
   id: string;
   label: string;
@@ -71,7 +68,7 @@ function TextField({
 }: TextFieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="mb-3 block text-xl font-bold">
+      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
         {label}
       </label>
       <textarea
@@ -109,7 +106,7 @@ function TextOrNoneField({ id, label, answer, onChange }: TextOrNoneFieldProps) 
 
   return (
     <div>
-      <label htmlFor={id} className="mb-3 block text-xl font-bold">
+      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
         {label}
       </label>
       <textarea
@@ -131,23 +128,19 @@ function TextOrNoneField({ id, label, answer, onChange }: TextOrNoneFieldProps) 
         }}
         className={TEXT_INPUT_CLASS}
       />
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          aria-pressed={value?.kind === "none"}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Chip
+          label="ない"
+          tone="secondary"
+          selected={value?.kind === "none"}
           onClick={() => toggle("none")}
-          className={toggleButtonClass(value?.kind === "none")}
-        >
-          {value?.kind === "none" ? "✓ ない" : "ない"}
-        </button>
-        <button
-          type="button"
-          aria-pressed={value?.kind === "dont_know"}
+        />
+        <Chip
+          label="わからない"
+          tone="secondary"
+          selected={value?.kind === "dont_know"}
           onClick={() => toggle("dont_know")}
-          className={toggleButtonClass(value?.kind === "dont_know")}
-        >
-          {value?.kind === "dont_know" ? "✓ わからない" : "わからない"}
-        </button>
+        />
       </div>
     </div>
   );
@@ -173,9 +166,7 @@ export function FamilyScreen({
 
   return (
     <>
-      <p className="sticky top-0 z-10 bg-emerald-700 px-4 py-3 text-center text-xl font-bold text-white">
-        家族・介護者が答えています
-      </p>
+      <TopBar tone="secondary">家族・介護者が答えています</TopBar>
       <div className="flex flex-col gap-10 px-4 py-6">
         <TextField
           id="chief-concern"
@@ -193,7 +184,7 @@ export function FamilyScreen({
             onChange={(next) => onChange({ onset: toChoiceAnswer(next) })}
           />
           <div>
-            <label htmlFor="onset-detail" className="mb-2 block text-lg">
+            <label htmlFor="onset-detail" className="mb-2 block text-body">
               くわしい時刻など（書かなくても大丈夫です）
             </label>
             <input
@@ -218,10 +209,10 @@ export function FamilyScreen({
         />
 
         <div>
-          <label htmlFor="temperature" className="mb-3 block text-xl font-bold">
+          <label htmlFor="temperature" className={FIELD_LABEL_CLASS}>
             体温（測っていれば）
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <input
               id="temperature"
               type="text"
@@ -245,24 +236,27 @@ export function FamilyScreen({
                 });
               }}
               className={`${TEXT_INPUT_CLASS} max-w-40 ${
-                isTemperatureInvalid ? "border-red-700" : ""
+                isTemperatureInvalid ? "border-caution" : ""
               }`}
             />
-            <span className="text-xl">℃</span>
+            <span className="text-title">℃</span>
           </div>
           <p
             id="temperature-hint"
-            className={`mt-2 text-base ${
-              isTemperatureInvalid ? "font-bold text-red-700" : ""
+            className={`mt-2 text-support ${
+              isTemperatureInvalid
+                ? "font-bold text-caution"
+                : "text-on-surface-variant"
             }`}
           >
             {isTemperatureInvalid
               ? "数字で入れてください（例：37.5 または 38）。このままでは記録されません。"
               : "例：37.5 または 38"}
           </p>
-          <button
-            type="button"
-            aria-pressed={isNotMeasured}
+          <Chip
+            label="測っていない"
+            tone="secondary"
+            selected={isNotMeasured}
             onClick={() => {
               setTemperatureText("");
               onChange({
@@ -275,10 +269,8 @@ export function FamilyScreen({
                     },
               });
             }}
-            className={`mt-3 w-full ${toggleButtonClass(isNotMeasured)}`}
-          >
-            {isNotMeasured ? "✓ 測っていない" : "測っていない"}
-          </button>
+            className="mt-2 w-full"
+          />
         </div>
 
         <SingleSelect
@@ -325,21 +317,13 @@ export function FamilyScreen({
           showCharCount
         />
 
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={onNext}
-            className="min-h-14 rounded-xl bg-emerald-700 px-3 py-2 text-lg font-bold text-white"
-          >
+        <div className="flex flex-col gap-4">
+          <Button tone="secondary" onClick={onNext}>
             次へ（医師に見せる画面）
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="min-h-14 rounded-xl border-2 border-zinc-400 bg-background px-3 py-2 text-lg font-medium"
-          >
+          </Button>
+          <Button variant="outlined" tone="secondary" onClick={onBack}>
             前の画面にもどる
-          </button>
+          </Button>
         </div>
       </div>
     </>
