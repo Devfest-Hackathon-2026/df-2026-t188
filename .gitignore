@@ -37,3 +37,5 @@ Thumbs.db
 
 # next dev が自動生成するエージェント向けファイル（コミットしない）
 AGENTS.md
+
+.claude/
