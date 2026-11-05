@@ -19,6 +19,8 @@ dist/
 build/
 out/
 .next/
+next-env.d.ts
+*.tsbuildinfo
 .wrangler/
 __pycache__/
 *.pyc
@@ -32,3 +34,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 *.log
+
+# next dev が自動生成するエージェント向けファイル（コミットしない）
+AGENTS.md
