@@ -1,24 +1,17 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { CharCount } from "@/components/intake/CharCount";
 import { FieldCard } from "@/components/intake/FieldCard";
 import { MultiSelect } from "@/components/intake/MultiSelect";
 import { PainSlider } from "@/components/intake/PainSlider";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
-import {
-  ChestIcon,
-  DotsIcon,
-  FaceIcon,
-  HandIcon,
-  PlusIcon,
-} from "@/components/ui/icons";
+import { PlusIcon } from "@/components/ui/icons";
 import { TopBar } from "@/components/ui/TopBar";
 import {
   BODY_PARTS,
   EXCLUSIVE_BODY_PARTS,
   EXCLUSIVE_SENSATIONS,
   SENSATIONS,
-  type BodyPart,
   type Sensation,
 } from "@/lib/intake/options";
 import type { Answer, PatientAnswers } from "@/lib/intake/types";
@@ -30,15 +23,6 @@ type PatientScreenProps = {
   nextLabel: string;
 };
 
-// 痛い場所のカードに付けるアイコン。
-// 形が伝わりにくかったもの（頭、のど、お腹、背中・腰、足）は外し、文字だけのカードにしている。
-// 「痛いところはない」「わからない」にも付けない
-const BODY_PART_ICONS: Partial<Record<BodyPart, ReactNode>> = {
-  "顔・口": <FaceIcon />,
-  胸: <ChestIcon />,
-  "手・腕": <HandIcon />,
-  その他: <DotsIcon />,
-};
 
 // 感覚のカードに付ける短い説明。選ぶときの手がかりで、記録も送信もしない
 const SENSATION_DESCRIPTIONS: Record<Sensation, string> = {
@@ -51,10 +35,8 @@ const SENSATION_DESCRIPTIONS: Record<Sensation, string> = {
   わからない: "うまく いえない",
 };
 
-const BODY_PART_OPTIONS = BODY_PARTS.map((value) => ({
-  value,
-  icon: BODY_PART_ICONS[value],
-}));
+// 痛い場所のカードは、文字だけにそろえている（アイコンは形が伝わりにくかったので付けない）
+const BODY_PART_OPTIONS = BODY_PARTS.map((value) => ({ value }));
 
 const SENSATION_OPTIONS = SENSATIONS.map((value) => ({
   value,

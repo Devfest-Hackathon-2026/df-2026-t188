@@ -14,9 +14,11 @@ type BreadcrumbProps<K extends string> = {
   onSelect: (key: K) => void;
 };
 
-// 押せる場所は縦横 48px 以上にする
+// 押せる場所は縦横 48px 以上にする。
+// 5つ並んでも幅 375px で1行に収まるよう、区切りの「＞」の左右の余白は 2px にしている。
+// 名前の途中で折り返さない
 const ITEM_CLASS =
-  "inline-flex min-h-12 min-w-12 items-center justify-center px-1 text-support";
+  "inline-flex min-h-12 min-w-12 items-center justify-center px-1 text-support whitespace-nowrap";
 
 function ItemName({ item }: { item: BreadcrumbItem<string> }) {
   return (
@@ -37,7 +39,7 @@ export function Breadcrumb<K extends string>({
         {items.map((item, index) => (
           <li key={item.key} className="crumb-enter flex items-center">
             {index > 0 && (
-              <span aria-hidden="true" className="px-1 text-on-surface-variant">
+              <span aria-hidden="true" className="px-0.5 text-on-surface-variant">
                 ＞
               </span>
             )}
