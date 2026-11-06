@@ -5,6 +5,7 @@ export type PictureOption<T extends string> = {
   value: T; // 記録する値
   label: string; // この画面に出す言葉
   picture: ReactNode;
+  bare?: boolean; // true のときは絵に丸い背景を付けない（人型の図）
 };
 
 type PictureSelectProps<T extends string> = {
@@ -32,7 +33,7 @@ export function PictureSelect<T extends string>({
     <fieldset>
       <legend className="mb-4 text-headline">{legend}</legend>
       <div className="grid grid-cols-2 gap-3">
-        {options.map(({ value, label, picture }, index) => {
+        {options.map(({ value, label, picture, bare = false }, index) => {
           const isSelected = selected.includes(value);
           const isLast = index === options.length - 1;
           return (
@@ -50,15 +51,19 @@ export function PictureSelect<T extends string>({
               }`}
             >
               <SelectedLayer rounded="rounded-lg" />
-              <span
-                className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-on-primary-container ${
-                  isSelected
-                    ? "bg-surface-container-lowest"
-                    : "bg-primary-container"
-                }`}
-              >
-                {picture}
-              </span>
+              {bare ? (
+                <span className="relative flex shrink-0">{picture}</span>
+              ) : (
+                <span
+                  className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-on-primary-container ${
+                    isSelected
+                      ? "bg-surface-container-lowest"
+                      : "bg-primary-container"
+                  }`}
+                >
+                  {picture}
+                </span>
+              )}
               <span className="relative text-center text-label font-bold">
                 {label}
               </span>

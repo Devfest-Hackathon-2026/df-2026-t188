@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { AbilityScreen } from "@/components/intake/AbilityScreen";
 import { DoctorScreen } from "@/components/intake/DoctorScreen";
-import { FamilyScreen } from "@/components/intake/FamilyScreen";
+import { FamilyScreen, type FamilyPage } from "@/components/intake/FamilyScreen";
 import { fieldId } from "@/components/intake/FieldCard";
-import { PatientScreen } from "@/components/intake/PatientScreen";
+import {
+  PatientScreen,
+  type PatientQuestion,
+} from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
 import { useStepHistory } from "@/components/intake/useStepHistory";
@@ -21,20 +24,36 @@ import type {
 
 type Step = IntakeState["step"];
 
-// 画面の順番と、パンくずリストに出す名前（label は画面用の短い名前、fullName は読み上げ用の正式な名前）
-const STEPS: { key: Step; label: string; fullName: string }[] = [
-  { key: "welcome", label: "はじめ", fullName: "はじめの画面" },
-  { key: "ability", label: "確認", fullName: "答えられるかの確認" },
-  { key: "patient", label: "こども", fullName: "こども" },
-  { key: "family", label: "保護者", fullName: "保護者" },
-  { key: "review", label: "見直し", fullName: "入力内容の見直し" },
-  { key: "doctor", label: "医師", fullName: "医師に見せる" },
+// 画面のまとまり。パンくずと上の帯は、このまとまりごとに出す（こどもと保護者は3画面で1つ）
+type StepGroup = "welcome" | "ability" | "patient" | "family" | "review" | "doctor";
+
+// 画面の順番。fullName は「もどる」で読み上げ機能に伝える、戻り先の名前
+const STEPS: { key: Step; group: StepGroup; fullName: string }[] = [
+  { key: "welcome", group: "welcome", fullName: "はじめ" },
+  { key: "ability", group: "ability", fullName: "答えられるかの確認" },
+  { key: "patientBody", group: "patient", fullName: "どこが へん" },
+  { key: "patientFeeling", group: "patient", fullName: "どんな かんじ" },
+  { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい" },
+  { key: "familyConcern", group: "family", fullName: "心配なこと・いつから" },
+  { key: "familyCondition", group: "family", fullName: "熱・食べる飲む" },
+  { key: "familyHistory", group: "family", fullName: "薬・アレルギー・持病" },
+  { key: "review", group: "review", fullName: "入力内容の見直し" },
+  { key: "doctor", group: "doctor", fullName: "医師に見せる" },
+];
+
+// パンくずに出すまとまり（label は画面用の短い名前、fullName は読み上げ用の正式な名前）
+const CRUMBS: { group: StepGroup; label: string; fullName: string }[] = [
+  { group: "ability", label: "確認", fullName: "答えられるかの確認" },
+  { group: "patient", label: "こども", fullName: "こども" },
+  { group: "family", label: "保護者", fullName: "保護者" },
+  { group: "review", label: "見直し", fullName: "入力内容の見直し" },
+  { group: "doctor", label: "医師", fullName: "医師に見せる" },
 ];
 
 // 上の帯に出す画面名と色。だれが答えている画面かを、色と文字の両方で示す。
 // 最初の画面には、帯もパンくずも「もどる」も出さない
 const SCREEN_BAND: Record<
-  Exclude<Step, "welcome">,
+  Exclude<StepGroup, "welcome">,
   { title: string; tone: TopBarTone }
 > = {
   ability: { title: "はじめの確認", tone: "neutral" },
@@ -44,8 +63,41 @@ const SCREEN_BAND: Record<
   doctor: { title: "医師に見せる画面", tone: "neutral" },
 };
 
+// こどもの画面と保護者の画面の、どの問いを出すか
+const PATIENT_QUESTIONS: Partial<Record<Step, PatientQuestion>> = {
+  patientBody: "body",
+  patientFeeling: "feeling",
+  patientDiscomfort: "discomfort",
+};
+
+const FAMILY_PAGES: Partial<Record<Step, FamilyPage>> = {
+  familyConcern: "concern",
+  familyCondition: "condition",
+  familyHistory: "history",
+};
+
+// 見直しの「編集」で移る先。項目を入力した画面
+const FIELD_STEPS: Record<string, Step> = {
+  bodyParts: "patientBody",
+  feelings: "patientFeeling",
+  discomfort: "patientDiscomfort",
+  chiefConcern: "familyConcern",
+  onset: "familyConcern",
+  temperature: "familyCondition",
+  foodIntake: "familyCondition",
+  medications: "familyHistory",
+  allergies: "familyHistory",
+  conditions: "familyHistory",
+  age: "familyHistory",
+  weight: "familyHistory",
+};
+
 function stepIndex(step: Step): number {
   return STEPS.findIndex((item) => item.key === step);
+}
+
+function groupOf(step: Step): StepGroup {
+  return STEPS[stepIndex(step)].group;
 }
 
 // 最初の質問の答えを変えたときは、ここまで「通った」扱いに戻す
@@ -60,12 +112,9 @@ type FlowState = IntakeState & {
 
 function createUnansweredPatientAnswers(): PatientAnswers {
   return {
+    bodyParts: { respondent: "patient", status: "unanswered" },
     feelings: { respondent: "patient", status: "unanswered" },
-    painLocations: { respondent: "patient", status: "unanswered" },
-    painLevel: { respondent: "patient", status: "unanswered" },
-    sensations: { respondent: "patient", status: "unanswered" },
-    sensationOther: { respondent: "patient", status: "unanswered" },
-    chiefComplaint: { respondent: "patient", status: "unanswered" },
+    discomfort: { respondent: "patient", status: "unanswered" },
   };
 }
 
@@ -76,30 +125,23 @@ function createDifficultPatientAnswers(): PatientAnswers {
     reason: "difficult_at_start",
   } as const;
   return {
+    bodyParts: unable,
     feelings: unable,
-    painLocations: unable,
-    painLevel: unable,
-    sensations: unable,
-    sensationOther: unable,
-    chiefComplaint: unable,
+    discomfort: unable,
   };
 }
 
 function createUnansweredFamilyAnswers(): FamilyAnswers {
   return {
-    age: { respondent: "family", status: "unanswered" },
-    weight: { respondent: "family", status: "unanswered" },
     chiefConcern: { respondent: "family", status: "unanswered" },
     onset: { respondent: "family", status: "unanswered" },
-    onsetDetail: { respondent: "family", status: "unanswered" },
-    course: { respondent: "family", status: "unanswered" },
     temperature: { respondent: "family", status: "unanswered" },
     foodIntake: { respondent: "family", status: "unanswered" },
-    differences: { respondent: "family", status: "unanswered" },
-    conditions: { respondent: "family", status: "unanswered" },
     medications: { respondent: "family", status: "unanswered" },
     allergies: { respondent: "family", status: "unanswered" },
-    consultation: { respondent: "family", status: "unanswered" },
+    conditions: { respondent: "family", status: "unanswered" },
+    age: { respondent: "family", status: "unanswered" },
+    weight: { respondent: "family", status: "unanswered" },
   };
 }
 
@@ -118,18 +160,33 @@ function moveTo(state: FlowState, step: Step): FlowState {
 // この流れで通る画面。最初に「難しい」を選んだときは、本人の画面を飛ばす
 function flowSteps(state: FlowState) {
   return state.canSelfReport === "difficult"
-    ? STEPS.filter((item) => item.key !== "patient")
+    ? STEPS.filter((item) => item.group !== "patient")
     : STEPS;
 }
 
-// パンくずに出すのは、今いる画面と、それまでに通った画面だけ（最初の画面は出さない）
+// パンくずに出すのは、今いるまとまりと、それまでに通ったまとまりだけ。
+// 押すと、そのまとまりの最初の画面に移る
 function breadcrumbItems(state: FlowState): BreadcrumbItem<Step>[] {
-  return flowSteps(state)
-    .filter(
-      (item) =>
-        item.key !== "welcome" && stepIndex(item.key) <= state.reachedIndex,
-    )
-    .map((item) => ({ ...item, isCurrent: item.key === state.step }));
+  const steps = flowSteps(state);
+  return CRUMBS.flatMap(({ group, label, fullName }) => {
+    const first = steps.find((item) => item.group === group);
+    if (!first || stepIndex(first.key) > state.reachedIndex) return [];
+    return [
+      {
+        key: first.key,
+        label,
+        fullName,
+        isCurrent: groupOf(state.step) === group,
+      },
+    ];
+  });
+}
+
+// 「次へ」で進む先。この流れで通る画面の順番で、1つ先の画面
+function nextStep(state: FlowState): Step {
+  const steps = flowSteps(state);
+  const index = steps.findIndex((item) => item.key === state.step);
+  return steps[Math.min(index + 1, steps.length - 1)].key;
 }
 
 // 「もどる」で戻る先。この流れで通る画面の順番で、1つ前の画面。
@@ -234,11 +291,9 @@ export function IntakeFlow() {
   // 「難しい」の流れでは本人の画面がないので、本人の項目は最初の質問に移る
   const editFromReview = (respondent: "patient" | "family", field: string) => {
     const target: Step =
-      respondent === "family"
-        ? "family"
-        : state.canSelfReport === "able"
-          ? "patient"
-          : "ability";
+      respondent === "patient" && state.canSelfReport !== "able"
+        ? "ability"
+        : FIELD_STEPS[field];
     fieldToShow.current = target === "ability" ? null : field;
     editingAfterBack.current = true;
     const { from, to } = stepsTo(target);
@@ -247,7 +302,13 @@ export function IntakeFlow() {
 
   const { isEditingFromReview } = state;
   const previous = previousStep(state);
-  const band = state.step === "welcome" ? null : SCREEN_BAND[state.step];
+  const group = groupOf(state.step);
+  const band = group === "welcome" ? null : SCREEN_BAND[group];
+  const patientQuestion = PATIENT_QUESTIONS[state.step];
+  const familyPage = FAMILY_PAGES[state.step];
+  // 「編集」の最中は見直しに戻り、それ以外は順番どおりに次の画面へ進む
+  const goNext = () =>
+    goToStep(isEditingFromReview ? "review" : nextStep(state));
 
   return (
     <main
@@ -286,7 +347,7 @@ export function IntakeFlow() {
             canSelfReport={state.canSelfReport}
             hasPatientInput={hasPatientInput}
             onChooseAble={() => {
-              stepHistory.pushSteps(["patient"]);
+              stepHistory.pushSteps(["patientBody"]);
               setState((prev) =>
                 moveTo(
                   {
@@ -303,7 +364,7 @@ export function IntakeFlow() {
                         ? prev.reachedIndex
                         : ABILITY_INDEX,
                   },
-                  "patient",
+                  "patientBody",
                 ),
               );
             }}
@@ -320,11 +381,12 @@ export function IntakeFlow() {
                     : ABILITY_INDEX,
               }))
             }
-            onNext={() => goToStep("family")}
+            onNext={goNext}
           />
         )}
-        {state.step === "patient" && (
+        {patientQuestion && (
           <PatientScreen
+            question={patientQuestion}
             answers={state.patient}
             onChange={(update) =>
               setState((prev) => ({
@@ -332,14 +394,19 @@ export function IntakeFlow() {
                 patient: { ...prev.patient, ...update },
               }))
             }
-            onNext={() => goToStep(isEditingFromReview ? "review" : "family")}
+            onNext={goNext}
             nextLabel={
-              isEditingFromReview ? "見直しに戻る" : "つぎへ（おとなの ひとへ）"
+              isEditingFromReview
+                ? "見直しに戻る"
+                : patientQuestion === "discomfort"
+                  ? "つぎへ（おとなの ひとへ）"
+                  : "つぎへ"
             }
           />
         )}
-        {state.step === "family" && (
+        {familyPage && (
           <FamilyScreen
+            page={familyPage}
             answers={state.family}
             onChange={(update) =>
               setState((prev) => ({
@@ -347,8 +414,14 @@ export function IntakeFlow() {
                 family: { ...prev.family, ...update },
               }))
             }
-            onNext={() => goToStep("review")}
-            nextLabel={isEditingFromReview ? "見直しに戻る" : "次へ（見直し）"}
+            onNext={goNext}
+            nextLabel={
+              isEditingFromReview
+                ? "見直しに戻る"
+                : familyPage === "history"
+                  ? "次へ（見直し）"
+                  : "次へ"
+            }
           />
         )}
         {state.step === "review" && (

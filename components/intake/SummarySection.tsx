@@ -130,7 +130,7 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
         AIによる要約
       </h2>
       <p className="mt-2 rounded-sm bg-surface-container-highest p-2 text-body font-bold">
-        本人・保護者が入力した内容を AI が整理したものです。診断ではありません。
+        入力内容を AI が整理したものです。診断ではありません。
       </p>
 
       {status.kind === "empty" && (

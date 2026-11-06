@@ -50,14 +50,6 @@ export function PencilIcon({ className }: IconProps) {
   );
 }
 
-export function PlusIcon({ className }: IconProps) {
-  return (
-    <Icon className={className} strokeWidth={2.5}>
-      <path d="M12 5v14M5 12h14" />
-    </Icon>
-  );
-}
-
 // ここから下は、「どんなかんじが する？」のカードのイラスト。
 // 形は子ども向けのデモ（.claude/design-ref/kids。チームメンバーが ChatGPT で作成）のもの
 
@@ -130,82 +122,50 @@ export function HeartIcon({ className }: IconProps) {
   );
 }
 
-// ここから下は、感覚のカードに使うアイコン。感じ方を、形で表している
+// ここから下は、「どこが へん？」のカードの人型の図。その部位だけ色を変える。
+// 形は子ども向けのデモ（.claude/design-ref/kids）の人型の図のもの。耳だけ描き足している
+export type BodyFigurePart =
+  | "head"
+  | "ears"
+  | "throat"
+  | "chest"
+  | "belly"
+  | "limbs";
 
-// ズキズキ：脈のような波
-export function PulseIcon({ className }: IconProps) {
+export function BodyFigure({ part }: { part: BodyFigurePart }) {
+  const region = (target: BodyFigurePart) => ({
+    fill:
+      part === target
+        ? "var(--color-primary)"
+        : "var(--color-surface-container-lowest)",
+    stroke:
+      part === target ? "var(--color-primary-shade)" : "var(--color-outline)",
+    strokeWidth: 3,
+    strokeLinejoin: "round" as const,
+  });
+
   return (
-    <Icon className={className}>
-      <path d="M3 12h4l2-5 4 10 2-5h6" />
-    </Icon>
+    <svg
+      aria-hidden="true"
+      viewBox="18 6 124 218"
+      className="h-[4.5rem] w-auto shrink-0"
+    >
+      <ellipse cx="58" cy="31" rx="7" ry="11" {...region("ears")} />
+      <ellipse cx="102" cy="31" rx="7" ry="11" {...region("ears")} />
+      <circle cx="80" cy="31" r="20" {...region("head")} />
+      <path d="M59 70 Q48 69 44 78 L30 113 Q28 120 34 123 Q39 125 42 118 L56 91Z" {...region("limbs")} />
+      <path d="M101 70 Q112 69 116 78 L130 113 Q132 120 126 123 Q121 125 118 118 L104 91Z" {...region("limbs")} />
+      <path d="M61 121 L79 121 L77 157 L70 211 Q69 218 62 217 Q56 216 57 209 L57 158Z" {...region("limbs")} />
+      <path d="M81 121 L99 121 L103 158 L103 209 Q104 216 98 217 Q91 218 90 211 L83 157Z" {...region("limbs")} />
+      <path d="M71 49 Q80 52 89 49 L90 69 Q80 72 70 69Z" {...region("throat")} />
+      <path d="M60 69 Q80 65 100 69 L105 93 Q80 89 55 93Z" {...region("chest")} />
+      <path d="M55 93 Q80 89 105 93 L106 100 Q104 111 100 123 L60 123 Q56 111 54 100Z" {...region("belly")} />
+    </svg>
   );
 }
 
-// チクチク：とげのように広がる短い線
-export function PrickIcon({ className }: IconProps) {
-  return (
-    <Icon className={className}>
-      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18" />
-    </Icon>
-  );
-}
-
-// しめつけられる：左右から内側に向かう矢印
-export function SqueezeIcon({ className }: IconProps) {
-  return (
-    <Icon className={className}>
-      <path d="M3 12h6M6.5 9.5L9 12l-2.5 2.5M21 12h-6M17.5 9.5L15 12l2.5 2.5M12 6v12" />
-    </Icon>
-  );
-}
-
-// 気持ち悪い：うねる線
-export function WaveIcon({ className }: IconProps) {
-  return (
-    <Icon className={className}>
-      <path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />
-    </Icon>
-  );
-}
-
-// めまい：うずまき
-export function SpiralIcon({ className }: IconProps) {
-  return (
-    <Icon className={className}>
-      <path d="M12 12a1.5 1.5 0 0 1 3 0 3 3 0 0 1-6 0 4.5 4.5 0 0 1 9 0 6 6 0 0 1-12 0" />
-    </Icon>
-  );
-}
-
-// だるい：下向きの矢印
-export function DownIcon({ className }: IconProps) {
-  return (
-    <Icon className={className} strokeWidth={2.5}>
-      <path d="M12 4v15M6 13l6 6 6-6" />
-    </Icon>
-  );
-}
-
-// わからない：はてな
-export function QuestionIcon({ className }: IconProps) {
-  return (
-    <Icon className={className} strokeWidth={2.5}>
-      <path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4M12 18h.01" />
-    </Icon>
-  );
-}
-
-// ここから下は、痛みの強さのカードに使う顔のアイコン。
-// 見た目の反応だけで、記録も送信もしない。0〜10 の値を5段階に分けて、表情を変える
+// ここから下は、「どれくらい つらい？」のカードに使う顔のアイコン。5段階で表情を変える
 export type FaceLevel = 0 | 1 | 2 | 3 | 4;
-
-export function faceLevel(painLevel: number): FaceLevel {
-  if (painLevel === 0) return 0;
-  if (painLevel <= 3) return 1;
-  if (painLevel <= 6) return 2;
-  if (painLevel <= 8) return 3;
-  return 4;
-}
 
 const FACE_PARTS: Record<FaceLevel, ReactNode> = {
   // にっこり
@@ -256,7 +216,3 @@ export function FaceIcon({
     </Icon>
   );
 }
-
-// 体の部位のアイコンは作っていない。
-// 小さな絵では「のど」と「胸」などの場所を描き分けられなかったので、
-// 痛い場所のカードは名前と説明だけにそろえている

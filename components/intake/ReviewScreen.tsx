@@ -12,8 +12,6 @@ import {
   type AnswerRow,
   buildFamilyRows,
   buildPatientRows,
-  familyChiefRow,
-  patientChiefRow,
 } from "@/lib/intake/unknowns";
 
 type ReviewScreenProps = {
@@ -24,70 +22,36 @@ type ReviewScreenProps = {
   onNext: () => void;
 };
 
-// 見直し画面の1項目。main は必ず出し、extra は回答があるときだけ下に出す
+// 見直し画面の1項目
 type ReviewItem = {
   title: string;
   field: string; // 「編集」で移る先の項目（FieldCard の名前）
   main: AnswerRow;
-  extra?: AnswerRow;
+};
+
+// 項目の名前。短い名前を出す
+const ITEM_TITLES: Record<string, string> = {
+  bodyParts: "へんなところ",
+  feelings: "どんなかんじ",
+  discomfort: "つらさ",
+  chiefConcern: "一番心配なこと",
+  onset: "いつから",
+  temperature: "熱",
+  foodIntake: "食べる・飲む",
+  medications: "飲んでいる薬",
+  allergies: "アレルギー",
+  conditions: "持病",
+  age: "年齢",
+  weight: "体重",
 };
 
 function buildItems(
   patient: PatientAnswers,
   family: FamilyAnswers,
 ): ReviewItem[] {
-  const patientRows = Object.fromEntries(
-    buildPatientRows(patient).map((row) => [row.key, row]),
+  return [...buildPatientRows(patient), ...buildFamilyRows(family)].map(
+    (row) => ({ title: ITEM_TITLES[row.key], field: row.key, main: row }),
   );
-  const familyRows = Object.fromEntries(
-    buildFamilyRows(family).map((row) => [row.key, row]),
-  );
-
-  return [
-    {
-      title: "主訴（本人の言葉）",
-      field: "chiefComplaint",
-      main: patientChiefRow(patient),
-    },
-    {
-      title: "主訴（保護者から見た症状）",
-      field: "chiefConcern",
-      main: familyChiefRow(family),
-    },
-    { title: "どんなかんじ", field: "feelings", main: patientRows.feelings },
-    { title: "痛い場所", field: "painLocations", main: patientRows.painLocations },
-    { title: "痛みの程度", field: "painLevel", main: patientRows.painLevel },
-    {
-      title: "感覚",
-      field: "sensations",
-      main: patientRows.sensations,
-      extra: patientRows.sensationOther,
-    },
-    {
-      title: "いつから",
-      field: "onset",
-      main: familyRows.onset,
-      extra: familyRows.onsetDetail,
-    },
-    { title: "経過", field: "course", main: familyRows.course },
-    { title: "体温", field: "temperature", main: familyRows.temperature },
-    { title: "食事・水分", field: "foodIntake", main: familyRows.foodIntake },
-    { title: "普段との違い", field: "differences", main: familyRows.differences },
-    { title: "年齢", field: "age", main: familyRows.age },
-    { title: "体重", field: "weight", main: familyRows.weight },
-    {
-      title: "持病・これまでの病気",
-      field: "conditions",
-      main: familyRows.conditions,
-    },
-    { title: "飲んでいる薬", field: "medications", main: familyRows.medications },
-    { title: "アレルギー", field: "allergies", main: familyRows.allergies },
-    {
-      title: "今日相談したいこと",
-      field: "consultation",
-      main: familyRows.consultation,
-    },
-  ];
 }
 
 export function ReviewScreen({
@@ -130,11 +94,6 @@ export function ReviewScreen({
                   <p className="mt-2 text-body font-medium">
                     <AnswerValue row={item.main} />
                   </p>
-                  {item.extra?.state === "answered" && (
-                    <p className="mt-1 text-body font-medium break-words whitespace-pre-wrap">
-                      {item.extra.text}
-                    </p>
-                  )}
                 </div>
                 <button
                   type="button"

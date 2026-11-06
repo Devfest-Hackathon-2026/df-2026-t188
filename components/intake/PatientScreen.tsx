@@ -68,6 +68,7 @@ const BODY_PART_OPTIONS: PictureOption<BodyPart>[] = BODY_PARTS.map((value) => (
   value,
   label: BODY_PART_LABELS[value],
   picture: BODY_PART_PICTURES[value],
+  bare: value !== "その他",
 }));
 
 const FEELING_OPTIONS: PictureOption<Feeling>[] = FEELINGS.map((value) => ({
