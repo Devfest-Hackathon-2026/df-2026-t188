@@ -55,7 +55,7 @@
   --color-on-surface-variant: #516a63;
   --color-outline: #6b8078; /* 入力欄の枠 */
   --color-outline-variant: #c5d5cd; /* カードの下の厚い縁 */
-  --color-card-line: #dfe8e3; /* カードの枠 */
+  --color-card-line: #7d9189; /* カードの枠。背景（surface）との比 3.07:1、白との比 3.34:1 */
   --color-inverse-surface: #223832;
   --color-inverse-on-surface: #ffffff;
 
@@ -321,7 +321,7 @@ body {
 /* 押さないカード：2px の枠と、下だけ厚い縁 */
 .card-frame {
   border: 2px solid var(--color-card-line);
-  border-bottom: 4px solid var(--color-outline-variant);
+  box-shadow: 0 2px 0 var(--color-outline-variant);
 }
 
 /* 最初の画面の絵：淡い緑の面に、白い丸を2つ重ねる。文字はのせない飾り */
