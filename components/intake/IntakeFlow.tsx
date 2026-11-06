@@ -8,8 +8,8 @@ import { fieldId } from "@/components/intake/FieldCard";
 import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
+import { BackButton } from "@/components/ui/BackButton";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
-import { StepProgress } from "@/components/ui/StepProgress";
 import { TopBar, type TopBarTone } from "@/components/ui/TopBar";
 import type {
   FamilyAnswers,
@@ -115,13 +115,12 @@ function breadcrumbItems(state: FlowState): BreadcrumbItem<Step>[] {
     .map((item) => ({ ...item, isCurrent: item.key === state.step }));
 }
 
-// 今が全体の何番目か。通常は全体を5、本人の画面を飛ばす流れでは4として数える
-function flowPosition(state: FlowState) {
+// 「もどる」で戻る先。この流れで通る画面の順番で、1つ前の画面。
+// 本人の画面を飛ばす流れでは、飛ばした画面には戻らない。最初の画面では null
+function previousStep(state: FlowState) {
   const steps = flowSteps(state);
-  return {
-    current: steps.findIndex((item) => item.key === state.step) + 1,
-    total: steps.length,
-  };
+  const index = steps.findIndex((item) => item.key === state.step);
+  return index > 0 ? steps[index - 1] : null;
 }
 
 const DIRECTION_CLASS = {
@@ -174,7 +173,7 @@ export function IntakeFlow() {
       (answer) => answer.status !== "unanswered",
     );
 
-  // ふつうの画面の切り替え（「次へ」とパンくず）。「編集」の最中という印は消す
+  // ふつうの画面の切り替え（「次へ」「もどる」とパンくず）。「編集」の最中という印は消す
   const goToStep = (step: Step) =>
     setState((prev) => moveTo({ ...prev, isEditingFromReview: false }, step));
 
@@ -192,15 +191,24 @@ export function IntakeFlow() {
   };
 
   const { isEditingFromReview } = state;
+  const previous = previousStep(state);
 
   return (
     <main
       ref={mainRef}
       className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-x-clip text-body"
     >
-      {/* 上の帯（STEP、バー、画面名）。スクロールしても上に残る */}
+      {/* 上の部分（「もどる」と画面名の帯）。スクロールしても上に残る。
+          最初の画面には「もどる」を出さない */}
       <header className="sticky top-0 z-20 bg-surface-container-lowest shadow-card">
-        <StepProgress {...flowPosition(state)} />
+        {previous && (
+          <div className="flex px-2">
+            <BackButton
+              destination={previous.fullName}
+              onClick={() => goToStep(previous.key)}
+            />
+          </div>
+        )}
         <TopBar tone={SCREEN_BAND[state.step].tone}>
           {SCREEN_BAND[state.step].title}
         </TopBar>
