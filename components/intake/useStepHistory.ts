@@ -12,6 +12,7 @@ type StepEntry<S extends string> = {
   run: string; // 起動ごとの番号。再読み込みの前の履歴と見分ける
   position: number; // 履歴の中で何番目か（最初の画面が 0）
   step: S;
+  sheet?: boolean; // シートを開いたときに積んだ履歴。「戻る」でシートを閉じるためのもの
 };
 
 function readEntry<S extends string>(state: unknown): StepEntry<S> | null {
@@ -73,8 +74,9 @@ export function useStepHistory<S extends string>({
     const entry = readEntry<S>(event.state);
     if (!entry) return;
 
-    // 再読み込みの前の履歴や、いまは通れない画面には移らず、元の位置に戻す
-    if (entry.run !== run || !canArrive(entry.step)) {
+    // 再読み込みの前の履歴や、いまは通れない画面には移らず、元の位置に戻す。
+    // シートの履歴にも「進む」では移らない（閉じたシートを開き直さない）
+    if (entry.run !== run || entry.sheet || !canArrive(entry.step)) {
       const delta = positionRef.current - entry.position;
       if (delta !== 0) {
         ignoreNextPop.current = true;
@@ -132,6 +134,17 @@ export function useStepHistory<S extends string>({
         window.history.pushState(withEntry({ run, position, step }), "");
         positionRef.current = position;
       }
+    },
+    // シートを開くとき。今の画面の上に履歴を1つ積む。閉じるときは goBack(1) で戻す
+    pushSheet(step: S) {
+      const run = runRef.current;
+      if (run === null) return;
+      const position = positionRef.current + 1;
+      window.history.pushState(
+        withEntry({ run, position, step, sheet: true }),
+        "",
+      );
+      positionRef.current = position;
     },
     // 前の画面へ戻るとき。履歴が戻った結果として onArrive が呼ばれる
     goBack(count: number) {

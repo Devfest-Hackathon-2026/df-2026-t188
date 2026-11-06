@@ -1,4 +1,5 @@
 import { AnswerValue } from "@/components/intake/AnswerValue";
+import type { EditTarget } from "@/components/intake/EditSheet";
 import { Badge, RESPONDENT_BADGE } from "@/components/ui/Badge";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
@@ -18,14 +19,14 @@ type ReviewScreenProps = {
   canSelfReport: IntakeState["canSelfReport"];
   patient: PatientAnswers;
   family: FamilyAnswers;
-  onEdit: (respondent: "patient" | "family", field: string) => void;
+  onEdit: (target: EditTarget) => void;
   onNext: () => void;
 };
 
 // 見直し画面の1項目
 type ReviewItem = {
   title: string;
-  field: string; // 「編集」で移る先の項目（FieldCard の名前）
+  field: string; // 項目の名前
   main: AnswerRow;
 };
 
@@ -71,7 +72,7 @@ export function ReviewScreen({
         </p>
         {canSelfReport === "difficult" && (
           <p className="text-support text-on-surface-variant">
-            最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。本人の項目の「編集」は、最初の質問に移ります。
+            最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。変えるときは、上の「確認」を押してください。
           </p>
         )}
 
@@ -79,6 +80,9 @@ export function ReviewScreen({
         <ul className="stagger flex flex-col gap-3">
           {items.map((item) => {
             const badge = RESPONDENT_BADGE[item.main.respondent];
+            // 「難しい」の流れでは、こどもの項目を保護者が直せないようにする
+            const canEdit =
+              item.main.respondent === "family" || canSelfReport === "able";
             return (
               <li
                 key={item.field}
@@ -95,15 +99,24 @@ export function ReviewScreen({
                     <AnswerValue row={item.main} />
                   </p>
                 </div>
-                <button
-                  type="button"
-                  aria-label={`${item.title}を編集`}
-                  onClick={() => onEdit(item.main.respondent, item.field)}
-                  className="press-feedback chunky inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md border-2 border-card-line bg-surface-container-lowest px-3 text-support font-bold text-on-surface focus-visible:outline-2 focus-visible:outline-on-surface"
-                >
-                  <PencilIcon className="h-4 w-4" />
-                  編集
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    aria-label={`${item.title}を編集`}
+                    data-edit-field={item.field}
+                    onClick={() =>
+                      onEdit({
+                        title: item.title,
+                        respondent: item.main.respondent,
+                        field: item.field,
+                      } as EditTarget)
+                    }
+                    className="press-feedback chunky inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md border-2 border-card-line bg-surface-container-lowest px-3 text-support font-bold text-on-surface focus-visible:outline-2 focus-visible:outline-on-surface"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                    編集
+                  </button>
+                )}
               </li>
             );
           })}

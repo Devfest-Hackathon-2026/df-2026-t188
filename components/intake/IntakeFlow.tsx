@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AbilityScreen } from "@/components/intake/AbilityScreen";
 import { DoctorScreen } from "@/components/intake/DoctorScreen";
+import { EditSheet, type EditTarget } from "@/components/intake/EditSheet";
 import { FamilyScreen, type FamilyPage } from "@/components/intake/FamilyScreen";
-import { fieldId } from "@/components/intake/FieldCard";
-import {
-  PatientScreen,
-  type PatientQuestion,
-} from "@/components/intake/PatientScreen";
+import type { PatientFieldKey } from "@/components/intake/IntakeField";
+import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
 import { useStepHistory } from "@/components/intake/useStepHistory";
@@ -64,9 +62,9 @@ const SCREEN_BAND: Record<
 };
 
 // こどもの画面と保護者の画面の、どの問いを出すか
-const PATIENT_QUESTIONS: Partial<Record<Step, PatientQuestion>> = {
-  patientBody: "body",
-  patientFeeling: "feeling",
+const PATIENT_FIELDS: Partial<Record<Step, PatientFieldKey>> = {
+  patientBody: "bodyParts",
+  patientFeeling: "feelings",
   patientDiscomfort: "discomfort",
 };
 
@@ -74,22 +72,6 @@ const FAMILY_PAGES: Partial<Record<Step, FamilyPage>> = {
   familyConcern: "concern",
   familyCondition: "condition",
   familyHistory: "history",
-};
-
-// 見直しの「編集」で移る先。項目を入力した画面
-const FIELD_STEPS: Record<string, Step> = {
-  bodyParts: "patientBody",
-  feelings: "patientFeeling",
-  discomfort: "patientDiscomfort",
-  chiefConcern: "familyConcern",
-  onset: "familyConcern",
-  temperature: "familyCondition",
-  foodIntake: "familyCondition",
-  medications: "familyHistory",
-  allergies: "familyHistory",
-  conditions: "familyHistory",
-  age: "familyHistory",
-  weight: "familyHistory",
 };
 
 function stepIndex(step: Step): number {
@@ -107,7 +89,6 @@ const ABILITY_INDEX = stepIndex("ability");
 type FlowState = IntakeState & {
   reachedIndex: number; // どの画面まで通ったか（STEPS の番号）
   direction: "forward" | "back" | null; // 直前の切り替えの向き。動きの向きに使う
-  isEditingFromReview: boolean; // 見直し画面の「編集」から来て、直している最中か
 };
 
 function createUnansweredPatientAnswers(): PatientAnswers {
@@ -210,30 +191,17 @@ export function IntakeFlow() {
     family: createUnansweredFamilyAnswers(),
     reachedIndex: 0,
     direction: null,
-    isEditingFromReview: false,
   });
   // 要約も画面の中（Reactの状態）だけで持つ。閉じたら消える
   const [summaryCache, setSummaryCache] = useState<SummaryCache | null>(null);
 
   // 画面（ステップ）が切り替わるたびに、ページの一番上を表示し、
-  // 新しい画面の見出しにフォーカスを移す（読み上げ機能に、画面が変わったことを伝える）。
-  // 見直し画面の「編集」から来たときは、その項目の位置まで表示して、そこにフォーカスを移す
+  // 新しい画面の見出しにフォーカスを移す（読み上げ機能に、画面が変わったことを伝える）
   const mainRef = useRef<HTMLElement>(null);
   const shownStep = useRef(state.step);
-  const fieldToShow = useRef<string | null>(null);
   useEffect(() => {
     if (shownStep.current === state.step) return;
     shownStep.current = state.step;
-
-    const field = fieldToShow.current
-      ? document.getElementById(fieldId(fieldToShow.current))
-      : null;
-    fieldToShow.current = null;
-    if (field) {
-      field.scrollIntoView({ block: "start" });
-      field.focus({ preventScroll: true });
-      return;
-    }
 
     window.scrollTo(0, 0);
     mainRef.current
@@ -247,8 +215,23 @@ export function IntakeFlow() {
       (answer) => answer.status !== "unanswered",
     );
 
-  // 履歴が戻ったあとに「編集」の最中にするか。見直しの「編集」のときだけ true にする
-  const editingAfterBack = useRef(false);
+  // 見直しのシート。開くと履歴を1つ積み、閉じるときは履歴を戻す。
+  // 「なおす」「やめる」「Esc」「ブラウザの戻る」は、どれも履歴が戻った結果として閉じる
+  const [sheet, setSheet] = useState<{
+    target: EditTarget;
+    isClosing: boolean;
+  } | null>(null);
+  const isSheetCloseRequested = useRef(false);
+  const editedField = useRef<string | null>(null);
+
+  // シートが消えたら、押した「編集」のボタンにフォーカスを戻す
+  useEffect(() => {
+    if (sheet || !editedField.current) return;
+    document
+      .querySelector<HTMLElement>(`[data-edit-field="${editedField.current}"]`)
+      ?.focus({ preventScroll: true });
+    editedField.current = null;
+  }, [sheet]);
 
   const stepHistory = useStepHistory<Step>({
     firstStep: "welcome",
@@ -258,11 +241,9 @@ export function IntakeFlow() {
       stepIndex(step) <= state.reachedIndex,
     // 履歴を通って画面を移ったとき。ブラウザの「戻る」「進む」も、「もどる」も、ここを通る
     onArrive: (step) => {
-      const isEditing = editingAfterBack.current;
-      editingAfterBack.current = false;
-      setState((prev) =>
-        moveTo({ ...prev, isEditingFromReview: isEditing }, step),
-      );
+      isSheetCloseRequested.current = true;
+      setSheet((prev) => prev && { ...prev, isClosing: true });
+      setState((prev) => moveTo(prev, step));
     },
     // 回答が入るのは、最初の質問に答えたあとだけ
     hasInput: state.canSelfReport !== null,
@@ -274,41 +255,39 @@ export function IntakeFlow() {
     return { keys, from: keys.indexOf(state.step), to: keys.indexOf(step) };
   };
 
-  // ふつうの画面の切り替え（「次へ」「もどる」とパンくず）。「編集」の最中という印は消す。
+  // 画面の切り替え（「次へ」「もどる」とパンくず）。
   // 先へ進むときは履歴に積み、前へ戻るときは履歴を戻す（履歴が戻った結果として画面が変わる）
   const goToStep = (step: Step) => {
     const { keys, from, to } = stepsTo(step);
     if (to < from) {
-      editingAfterBack.current = false;
       stepHistory.goBack(from - to);
       return;
     }
     stepHistory.pushSteps(keys.slice(from + 1, to + 1));
-    setState((prev) => moveTo({ ...prev, isEditingFromReview: false }, step));
+    setState((prev) => moveTo(prev, step));
   };
 
-  // 見直し画面の「編集」。その項目を入力した画面の、その位置に移る。
-  // 「難しい」の流れでは本人の画面がないので、本人の項目は最初の質問に移る
-  const editFromReview = (respondent: "patient" | "family", field: string) => {
-    const target: Step =
-      respondent === "patient" && state.canSelfReport !== "able"
-        ? "ability"
-        : FIELD_STEPS[field];
-    fieldToShow.current = target === "ability" ? null : field;
-    editingAfterBack.current = true;
-    const { from, to } = stepsTo(target);
-    stepHistory.goBack(from - to);
+  // 見直しの「編集」。その場でシートを開く
+  const openSheet = (target: EditTarget) => {
+    stepHistory.pushSheet(state.step);
+    isSheetCloseRequested.current = false;
+    editedField.current = target.field;
+    setSheet({ target, isClosing: false });
   };
 
-  const { isEditingFromReview } = state;
+  // シートを閉じる。2回押されても、履歴は1つだけ戻す
+  const requestSheetClose = () => {
+    if (isSheetCloseRequested.current) return;
+    isSheetCloseRequested.current = true;
+    stepHistory.goBack(1);
+  };
+
   const previous = previousStep(state);
   const group = groupOf(state.step);
   const band = group === "welcome" ? null : SCREEN_BAND[group];
-  const patientQuestion = PATIENT_QUESTIONS[state.step];
+  const patientField = PATIENT_FIELDS[state.step];
   const familyPage = FAMILY_PAGES[state.step];
-  // 「編集」の最中は見直しに戻り、それ以外は順番どおりに次の画面へ進む
-  const goNext = () =>
-    goToStep(isEditingFromReview ? "review" : nextStep(state));
+  const goNext = () => goToStep(nextStep(state));
 
   return (
     <main
@@ -353,7 +332,6 @@ export function IntakeFlow() {
                   {
                     ...prev,
                     canSelfReport: "able",
-                    isEditingFromReview: false,
                     patient:
                       prev.canSelfReport === "difficult"
                         ? createUnansweredPatientAnswers()
@@ -372,7 +350,6 @@ export function IntakeFlow() {
               setState((prev) => ({
                 ...prev,
                 canSelfReport: "difficult",
-                isEditingFromReview: false,
                 patient: createDifficultPatientAnswers(),
                 // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
                 reachedIndex:
@@ -384,9 +361,9 @@ export function IntakeFlow() {
             onNext={goNext}
           />
         )}
-        {patientQuestion && (
+        {patientField && (
           <PatientScreen
-            question={patientQuestion}
+            field={patientField}
             answers={state.patient}
             onChange={(update) =>
               setState((prev) => ({
@@ -396,11 +373,9 @@ export function IntakeFlow() {
             }
             onNext={goNext}
             nextLabel={
-              isEditingFromReview
-                ? "見直しに戻る"
-                : patientQuestion === "discomfort"
-                  ? "つぎへ（おとなの ひとへ）"
-                  : "つぎへ"
+              patientField === "discomfort"
+                ? "つぎへ（おとなの ひとへ）"
+                : "つぎへ"
             }
           />
         )}
@@ -415,13 +390,7 @@ export function IntakeFlow() {
               }))
             }
             onNext={goNext}
-            nextLabel={
-              isEditingFromReview
-                ? "見直しに戻る"
-                : familyPage === "history"
-                  ? "次へ（見直し）"
-                  : "次へ"
-            }
+            nextLabel={familyPage === "history" ? "次へ（見直し）" : "次へ"}
           />
         )}
         {state.step === "review" && (
@@ -429,7 +398,7 @@ export function IntakeFlow() {
             canSelfReport={state.canSelfReport}
             patient={state.patient}
             family={state.family}
-            onEdit={editFromReview}
+            onEdit={openSheet}
             onNext={() => goToStep("doctor")}
           />
         )}
@@ -443,6 +412,28 @@ export function IntakeFlow() {
           />
         )}
       </div>
+      {sheet && (
+        <EditSheet
+          target={sheet.target}
+          isClosing={sheet.isClosing}
+          patient={state.patient}
+          family={state.family}
+          onSavePatient={(update) =>
+            setState((prev) => ({
+              ...prev,
+              patient: { ...prev.patient, ...update },
+            }))
+          }
+          onSaveFamily={(update) =>
+            setState((prev) => ({
+              ...prev,
+              family: { ...prev.family, ...update },
+            }))
+          }
+          onRequestClose={requestSheetClose}
+          onClosed={() => setSheet(null)}
+        />
+      )}
     </main>
   );
 }

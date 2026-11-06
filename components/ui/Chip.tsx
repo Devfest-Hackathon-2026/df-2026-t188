@@ -48,7 +48,7 @@ export function Chip({ label, selected, onClick, className = "" }: ChipProps) {
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`press-feedback chunky relative flex min-h-14 items-center justify-between gap-2 rounded-md border-2 border-card-line bg-surface-container-lowest px-3 py-2 text-left text-label focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
+      className={`press-feedback chunky relative flex min-h-14 items-center justify-between gap-2 rounded-md border-2 border-card-line bg-surface-container-lowest px-2.5 py-2 text-left text-label focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
         selected ? "text-on-primary-container" : "text-on-surface"
       } ${className}`}
     >
