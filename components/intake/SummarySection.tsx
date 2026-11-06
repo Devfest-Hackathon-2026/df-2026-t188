@@ -118,6 +118,43 @@ function SummaryText({ text, emptyText }: { text: string; emptyText: string }) {
   );
 }
 
+// 本人と保護者の食い違い。上下に並べて、どちらが正しいかは示さない。
+// 片方の回答がないときは比べていないので、「なし」とは出さない
+function DiscrepancyBlock({ summary }: { summary: Summary }) {
+  if (summary.patientSummary === "" || summary.familySummary === "") {
+    return (
+      <p className="text-support text-on-surface-variant">
+        食い違い：比べていません（片方の回答がありません）
+      </p>
+    );
+  }
+  if (summary.discrepancies.length === 0) {
+    return <p className="text-support text-on-surface-variant">食い違い：なし</p>;
+  }
+  return (
+    <div>
+      <h3 className="text-label font-bold">食い違い（AIが見つけたもの）</h3>
+      <ul className="mt-2 flex flex-col gap-3">
+        {summary.discrepancies.map((item, index) => (
+          <li key={index} className="break-words whitespace-pre-wrap">
+            <p className="text-support font-bold">{item.topic}</p>
+            <dl className="mt-1 overflow-hidden rounded-sm text-body">
+              <div className="flex gap-2 bg-patient-container px-2 py-1">
+                <dt className="shrink-0 font-bold text-patient">本人</dt>
+                <dd className="min-w-0">{item.patient}</dd>
+              </div>
+              <div className="flex gap-2 bg-family-container px-2 py-1">
+                <dt className="shrink-0 font-bold text-family">保護者</dt>
+                <dd className="min-w-0">{item.family}</dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // AI の要約。画面の中で一番目立つカード（青い枠）。
 // 中は線と余白で区切り、カードの中にカードは入れない
 export function SummarySection({ status }: { status: SummaryStatus }) {
@@ -129,8 +166,8 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
         </span>
         AIによる要約
       </h2>
-      <p className="mt-2 rounded-sm bg-surface-container-highest p-2 text-body font-bold">
-        入力内容を AI が整理したものです。診断ではありません。
+      <p className="mt-2 rounded-sm bg-surface-container-highest px-2 py-1 text-support font-bold">
+        AIの整理です。診断ではありません。
       </p>
 
       {status.kind === "empty" && (
@@ -168,8 +205,9 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
       )}
 
       {status.kind === "ready" && (
-        <div className="mt-4 flex flex-col gap-4">
-          <div>
+        <div className="mt-3 flex flex-col gap-4">
+          <DiscrepancyBlock summary={status.summary} />
+          <div className="border-t border-outline-variant pt-4">
             <h3 className="flex flex-wrap items-center gap-2 text-label font-bold">
               <Badge kind="patient">本人</Badge>
               本人の回答の要約
@@ -188,28 +226,6 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
               text={status.summary.familySummary}
               emptyText="要約する保護者の回答がありません。"
             />
-          </div>
-          <div className="border-t border-outline-variant pt-4">
-            <h3 className="text-label font-bold">
-              本人と保護者で食い違っている点（AIが見つけたもの）
-            </h3>
-            {status.summary.discrepancies.length === 0 ? (
-              <p className="mt-1 text-body text-on-surface-variant">なし</p>
-            ) : (
-              <ul className="mt-1 flex flex-col gap-4 text-body">
-                {status.summary.discrepancies.map((item, index) => (
-                  <li key={index} className="break-words whitespace-pre-wrap">
-                    <span className="font-bold">{item.topic}</span>
-                    <br />
-                    <span className="font-bold text-patient">本人：</span>
-                    {item.patient}
-                    <br />
-                    <span className="font-bold text-family">保護者：</span>
-                    {item.family}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
       )}
