@@ -37,10 +37,12 @@ type AttemptResult =
   | { ok: true; summary: Summary }
   | { ok: false; kind: SummaryFailure; status?: number };
 
-// elapsedMs と retries（やり直した回数）は、速さを測るためのログに使う（入力や要約の中身は含めない）
+// elapsedMs、retries（やり直した回数）、attemptsMs（各回にかかった時間）は、
+// 速さを測るためのログに使う（入力や要約の中身は含めない）
 export type SummaryResult = AttemptResult & {
   elapsedMs: number;
   retries: number;
+  attemptsMs: number[];
 };
 
 const SYSTEM_INSTRUCTION = `あなたは、受診前の問診の回答を、医師に説明するための短い文章に整理する係です。
@@ -140,9 +142,17 @@ export async function generateSummary(
   clientSignal?: AbortSignal,
 ): Promise<SummaryResult> {
   const startedAt = Date.now();
+  const attemptsMs: number[] = [];
   let retries = 0;
 
-  let result = await attemptSummary(input, ATTEMPT_TIMEOUT_MS, clientSignal);
+  const timedAttempt = async (timeoutMs: number) => {
+    const attemptStartedAt = Date.now();
+    const attempt = await attemptSummary(input, timeoutMs, clientSignal);
+    attemptsMs.push(Date.now() - attemptStartedAt);
+    return attempt;
+  };
+
+  let result = await timedAttempt(ATTEMPT_TIMEOUT_MS);
 
   while (
     retries < MAX_RETRIES &&
@@ -152,14 +162,10 @@ export async function generateSummary(
     const remainingMs = TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
     if (remainingMs < MIN_RETRY_TIME_MS) break;
     retries += 1;
-    result = await attemptSummary(
-      input,
-      Math.min(ATTEMPT_TIMEOUT_MS, remainingMs),
-      clientSignal,
-    );
+    result = await timedAttempt(Math.min(ATTEMPT_TIMEOUT_MS, remainingMs));
   }
 
-  return { ...result, elapsedMs: Date.now() - startedAt, retries };
+  return { ...result, elapsedMs: Date.now() - startedAt, retries, attemptsMs };
 }
 
 // Gemini を1回呼ぶ。timeoutMs を過ぎるか、ブラウザが接続を切ったら、呼び出しを中止する
