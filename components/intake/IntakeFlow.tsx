@@ -416,15 +416,8 @@ export function IntakeFlow() {
         <EditSheet
           target={sheet.target}
           isClosing={sheet.isClosing}
-          patient={state.patient}
           family={state.family}
-          onSavePatient={(update) =>
-            setState((prev) => ({
-              ...prev,
-              patient: { ...prev.patient, ...update },
-            }))
-          }
-          onSaveFamily={(update) =>
+          onSave={(update) =>
             setState((prev) => ({
               ...prev,
               family: { ...prev.family, ...update },

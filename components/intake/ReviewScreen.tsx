@@ -1,5 +1,6 @@
 import { AnswerValue } from "@/components/intake/AnswerValue";
 import type { EditTarget } from "@/components/intake/EditSheet";
+import type { FamilyFieldKey } from "@/components/intake/IntakeField";
 import { Badge, RESPONDENT_BADGE } from "@/components/ui/Badge";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
@@ -70,19 +71,18 @@ export function ReviewScreen({
         <p className="text-body">
           入力した内容です。直したいところは「編集」を押してください。
         </p>
-        {canSelfReport === "difficult" && (
-          <p className="text-support text-on-surface-variant">
-            最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。変えるときは、上の「確認」を押してください。
-          </p>
-        )}
+        <p className="text-support text-on-surface-variant">
+          {canSelfReport === "difficult"
+            ? "最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。変えるときは、上の「確認」を押してください。"
+            : "お子さんと一緒に、上の「こども」から直してください。"}
+        </p>
 
         {/* 項目ごとのカード：小さなラベル、内容（入力そのまま）、右の「編集」ボタン */}
         <ul className="stagger flex flex-col gap-3">
           {items.map((item) => {
             const badge = RESPONDENT_BADGE[item.main.respondent];
-            // 「難しい」の流れでは、こどもの項目を保護者が直せないようにする
-            const canEdit =
-              item.main.respondent === "family" || canSelfReport === "able";
+            // こどもの項目は保護者が書き換えられないようにする（本人と保護者の回答を混ぜないため）
+            const canEdit = item.main.respondent === "family";
             return (
               <li
                 key={item.field}
@@ -107,9 +107,8 @@ export function ReviewScreen({
                     onClick={() =>
                       onEdit({
                         title: item.title,
-                        respondent: item.main.respondent,
-                        field: item.field,
-                      } as EditTarget)
+                        field: item.field as FamilyFieldKey,
+                      })
                     }
                     className="press-feedback chunky inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md border-2 border-card-line bg-surface-container-lowest px-3 text-support font-bold text-on-surface focus-visible:outline-2 focus-visible:outline-on-surface"
                   >

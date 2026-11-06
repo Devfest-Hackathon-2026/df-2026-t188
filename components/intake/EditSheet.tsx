@@ -5,19 +5,12 @@
 // 読み上げ機能でも移れない
 import { useEffect, useRef, useState } from "react";
 import { FieldCard } from "@/components/intake/FieldCard";
-import {
-  FamilyField,
-  PatientField,
-  type FamilyFieldKey,
-  type PatientFieldKey,
-} from "@/components/intake/IntakeField";
+import { FamilyField, type FamilyFieldKey } from "@/components/intake/IntakeField";
 import { Button } from "@/components/ui/Button";
-import type { FamilyAnswers, PatientAnswers } from "@/lib/intake/types";
+import type { FamilyAnswers } from "@/lib/intake/types";
 
-export type EditTarget = { title: string } & (
-  | { respondent: "patient"; field: PatientFieldKey }
-  | { respondent: "family"; field: FamilyFieldKey }
-);
+// シートで直せるのは、保護者の項目だけ。こどもの項目は「こども」の画面で、お子さんと一緒に直す
+export type EditTarget = { title: string; field: FamilyFieldKey };
 
 // 閉じる動きの時間。globals.css の .edit-sheet[data-closing] と合わせる
 const CLOSE_ANIMATION_MS = 180;
@@ -25,10 +18,8 @@ const CLOSE_ANIMATION_MS = 180;
 type EditSheetProps = {
   target: EditTarget;
   isClosing: boolean; // 履歴が戻り、閉じる動きの最中
-  patient: PatientAnswers;
   family: FamilyAnswers;
-  onSavePatient: (update: Partial<PatientAnswers>) => void;
-  onSaveFamily: (update: Partial<FamilyAnswers>) => void;
+  onSave: (update: Partial<FamilyAnswers>) => void;
   onRequestClose: () => void; // 履歴を1つ戻す。戻った結果として閉じる
   onClosed: () => void; // 閉じる動きが終わった
 };
@@ -36,16 +27,13 @@ type EditSheetProps = {
 export function EditSheet({
   target,
   isClosing,
-  patient,
   family,
-  onSavePatient,
-  onSaveFamily,
+  onSave,
   onRequestClose,
   onClosed,
 }: EditSheetProps) {
   // 下書き。「なおす」を押すまで、本当の回答は変えない
-  const [draftPatient, setDraftPatient] = useState(patient);
-  const [draftFamily, setDraftFamily] = useState(family);
+  const [draft, setDraft] = useState(family);
   const [hasInvalidInput, setHasInvalidInput] = useState(false);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -145,11 +133,7 @@ export function EditSheet({
         ?.focus();
       return;
     }
-    if (target.respondent === "patient") {
-      onSavePatient({ [target.field]: draftPatient[target.field] });
-    } else {
-      onSaveFamily({ [target.field]: draftFamily[target.field] });
-    }
+    onSave({ [target.field]: draft[target.field] });
     onRequestClose();
   };
 
@@ -170,32 +154,16 @@ export function EditSheet({
       <div
         ref={contentRef}
         tabIndex={-1}
-        className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 outline-none ${
-          target.respondent === "patient" ? "kana-text" : ""
-        }`}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 outline-none"
       >
-        {target.respondent === "patient" ? (
-          <FieldCard bare>
-            <PatientField
-              field={target.field}
-              answers={draftPatient}
-              onChange={(update) =>
-                setDraftPatient((prev) => ({ ...prev, ...update }))
-              }
-            />
-          </FieldCard>
-        ) : (
-          <FieldCard>
-            <FamilyField
-              field={target.field}
-              answers={draftFamily}
-              onChange={(update) =>
-                setDraftFamily((prev) => ({ ...prev, ...update }))
-              }
-              onInvalidChange={setHasInvalidInput}
-            />
-          </FieldCard>
-        )}
+        <FieldCard>
+          <FamilyField
+            field={target.field}
+            answers={draft}
+            onChange={(update) => setDraft((prev) => ({ ...prev, ...update }))}
+            onInvalidChange={setHasInvalidInput}
+          />
+        </FieldCard>
       </div>
       <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-outline-variant bg-surface-container-lowest px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Button variant="outlined" onClick={onRequestClose}>
