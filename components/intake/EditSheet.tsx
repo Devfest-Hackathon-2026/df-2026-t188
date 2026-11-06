@@ -1,4 +1,4 @@
-// 見直しの「編集」で開くシート。その項目の質問を、元の画面と同じ部品で出す。
+// 見直しの「編集」で画面の真ん中に開くシート。その項目の質問を、元の画面と同じ部品で出す。
 // 閉じられるのは「なおす」「やめる」、Esc、ブラウザの「戻る」やスワイプだけ。
 // シートの外を押しても、下に引いても閉じない。
 // 標準の <dialog> の showModal を使うので、開いている間は後ろの画面を押せず、
@@ -95,10 +95,12 @@ export function EditSheet({
     };
 
     const fitToViewport = () => {
+      // 見えている範囲の真ん中に置き、高さは範囲の 85% までにする
       const hiddenBelow =
         window.innerHeight - viewport.height - viewport.offsetTop;
+      dialog.style.top = `${viewport.offsetTop}px`;
       dialog.style.bottom = `${Math.max(0, hiddenBelow)}px`;
-      dialog.style.maxHeight = `${Math.min(viewport.height, window.innerHeight * 0.9)}px`;
+      dialog.style.maxHeight = `${viewport.height * 0.85}px`;
       showFocusedInput();
     };
 
@@ -151,12 +153,15 @@ export function EditSheet({
       // ブラウザが cancel を止めさせずに閉じたときも、履歴を戻してそろえる
       onClose={onRequestClose}
     >
+      {/* flex-1 を使わない。高さを決めていない入れ物の中で flex-1 にすると、
+          iPhone の Safari ではこの部分の高さが 0 につぶれる。
+          中身の高さのままにして、入りきらないときだけ縮めてスクロールする */}
       <div
         ref={contentRef}
         tabIndex={-1}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 outline-none"
+        className="min-h-0 overflow-y-auto overscroll-contain p-4 outline-none"
       >
-        <FieldCard>
+        <FieldCard bare>
           <FamilyField
             field={target.field}
             answers={draft}
