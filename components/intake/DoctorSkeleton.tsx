@@ -16,9 +16,6 @@ export function DoctorSkeleton() {
           <div className="skeleton h-24 rounded-sm" />
           <div className="skeleton h-24 rounded-sm" />
         </div>
-
-        {/* 詳しく見る */}
-        <div className="skeleton h-14 rounded-lg" />
       </div>
     </div>
   );

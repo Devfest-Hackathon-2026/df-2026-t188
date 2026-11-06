@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnswerValue } from "@/components/intake/AnswerValue";
 import { DoctorSkeleton } from "@/components/intake/DoctorSkeleton";
 import {
@@ -7,6 +7,8 @@ import {
   type SummaryCache,
 } from "@/components/intake/SummarySection";
 import { Badge } from "@/components/ui/Badge";
+import { BottomBar } from "@/components/ui/BottomBar";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChevronIcon } from "@/components/ui/icons";
 import type {
@@ -87,6 +89,12 @@ export function DoctorScreen({
   const [isOpenedByUser, setIsOpenedByUser] = useState(false);
   const isDetailOpen = !hasSummary || isOpenedByUser;
 
+  // 下のボタンで開いたら、開いた内容の先頭まで表示する
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isOpenedByUser) detailRef.current?.scrollIntoView({ block: "start" });
+  }, [isOpenedByUser]);
+
   // 要約の作成中は、要約と「詳しく見る」の代わりにスケルトンを出す。
   // スケルトンから切り替わるときは、カードが上から順にふわっと出る（.stagger）
   const isLoading = summaryStatus.kind === "loading";
@@ -100,97 +108,102 @@ export function DoctorScreen({
       : "";
 
   return (
-    <div className="flex flex-1 flex-col gap-4 px-4 py-4">
-      {/* 読み上げ機能に、要約の作成中と完了を伝える */}
-      <p role="status" aria-live="polite" className="sr-only">
-        {statusMessage}
-      </p>
+    <>
+      <div className="flex flex-1 flex-col gap-4 px-4 py-4">
+        {/* 読み上げ機能に、要約の作成中と完了を伝える */}
+        <p role="status" aria-live="polite" className="sr-only">
+          {statusMessage}
+        </p>
 
-      {notices.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {notices.map((notice) => (
-            <SafetyLine key={notice.text} notice={notice} />
-          ))}
-        </div>
-      )}
+        {notices.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {notices.map((notice) => (
+              <SafetyLine key={notice.text} notice={notice} />
+            ))}
+          </div>
+        )}
 
-      {isLoading ? (
-        <DoctorSkeleton />
-      ) : (
-        <div className="stagger flex flex-col gap-4">
-          <SummarySection status={summaryStatus} />
+        {isLoading ? (
+          <DoctorSkeleton />
+        ) : (
+          <div className="stagger flex flex-col gap-4">
+            <SummarySection status={summaryStatus} />
 
-          <Card className="p-0">
-            <h2>
-              <button
-                type="button"
-                aria-expanded={isDetailOpen}
-                aria-controls="original-answers"
-                disabled={!hasSummary}
-                onClick={() => setIsOpenedByUser((isOpen) => !isOpen)}
-                className="flex min-h-14 w-full items-center gap-2 rounded-lg px-4 py-4 text-left text-title focus-visible:outline-2 focus-visible:outline-on-surface"
+            {/* 要約がないときは下のボタンを出さないので、ここに見出しを置く */}
+            {!hasSummary && <h2 className="text-title">詳しく見る</h2>}
+
+            {isDetailOpen && (
+              <div
+                ref={detailRef}
+                id="original-answers"
+                className="flex scroll-mt-32 flex-col gap-4"
               >
-                {hasSummary && (
-                  <ChevronIcon
-                    className={`h-6 w-6 ${isDetailOpen ? "rotate-90" : ""}`}
-                  />
-                )}
-                詳しく見る
-              </button>
-            </h2>
-          </Card>
+                <Card tone="caution">
+                  <h3 className="text-title">
+                    不明の項目（{unknownRows.length}件）
+                  </h3>
+                  {unknownRows.length === 0 ? (
+                    <p className="mt-2 text-body">必須の項目に不明はありません。</p>
+                  ) : (
+                    <ul className="mt-2 flex flex-col gap-2 text-body">
+                      {unknownRows.map((row) => (
+                        <li key={row.key}>
+                          <span className="font-bold">
+                            {RESPONDENT_LABEL[row.respondent]}：{row.label}
+                          </span>
+                          <br />
+                          {row.state !== "answered" &&
+                            missingStateLabel(row.state, true)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
 
-          {isDetailOpen && (
-            <div id="original-answers" className="flex flex-col gap-4">
-              <Card tone="caution">
-                <h3 className="text-title">
-                  不明の項目（{unknownRows.length}件）
-                </h3>
-                {unknownRows.length === 0 ? (
-                  <p className="mt-2 text-body">必須の項目に不明はありません。</p>
-                ) : (
-                  <ul className="mt-2 flex flex-col gap-2 text-body">
-                    {unknownRows.map((row) => (
-                      <li key={row.key}>
-                        <span className="font-bold">
-                          {RESPONDENT_LABEL[row.respondent]}：{row.label}
-                        </span>
-                        <br />
-                        {row.state !== "answered" &&
-                          missingStateLabel(row.state, true)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
+                <Card>
+                  <h3 className="flex flex-wrap items-center gap-2 text-title">
+                    本人の回答
+                    <Badge kind="patient">本人</Badge>
+                  </h3>
+                  {canSelfReport === "difficult" && (
+                    <p className="mt-2 text-support text-on-surface-variant">
+                      最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答はすべて「回答困難」です。
+                    </p>
+                  )}
+                  <RowList rows={buildPatientRows(patient)} />
+                </Card>
 
-              <Card>
-                <h3 className="flex flex-wrap items-center gap-2 text-title">
-                  本人の回答
-                  <Badge kind="patient">本人</Badge>
-                </h3>
-                {canSelfReport === "difficult" && (
-                  <p className="mt-2 text-support text-on-surface-variant">
-                    最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答はすべて「回答困難」です。
+                <Card>
+                  <h3 className="flex flex-wrap items-center gap-2 text-title">
+                    保護者の回答
+                    <Badge kind="family">保護者</Badge>
+                  </h3>
+                  <p className="mt-1 text-support text-on-surface-variant">
+                    入力されたとおりに表示しています。AIは通していません。
                   </p>
-                )}
-                <RowList rows={buildPatientRows(patient)} />
-              </Card>
-
-              <Card>
-                <h3 className="flex flex-wrap items-center gap-2 text-title">
-                  保護者の回答
-                  <Badge kind="family">保護者</Badge>
-                </h3>
-                <p className="mt-1 text-support text-on-surface-variant">
-                  入力されたとおりに表示しています。AIは通していません。
-                </p>
-                <RowList rows={buildFamilyRows(family)} />
-              </Card>
-            </div>
-          )}
-        </div>
+                  <RowList rows={buildFamilyRows(family)} />
+                </Card>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {/* 「詳しく見る」は下に固定する。要約が長くても、スクロールせずに押せる */}
+      {hasSummary && (
+        <BottomBar>
+          <Button
+            variant="outlined"
+            aria-expanded={isDetailOpen}
+            aria-controls="original-answers"
+            onClick={() => setIsOpenedByUser((isOpen) => !isOpen)}
+          >
+            <ChevronIcon
+              className={`h-6 w-6 ${isDetailOpen ? "-rotate-90" : "rotate-90"}`}
+            />
+            {isDetailOpen ? "閉じる" : "詳しく見る"}
+          </Button>
+        </BottomBar>
       )}
-    </div>
+    </>
   );
 }
