@@ -5,16 +5,15 @@ import { SingleSelect } from "@/components/intake/SingleSelect";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import {
-  COURSE_OPTIONS,
-  FOOD_INTAKE_OPTIONS,
-  ONSET_OPTIONS,
-} from "@/lib/intake/options";
+import { FOOD_INTAKE_OPTIONS, ONSET_OPTIONS } from "@/lib/intake/options";
 import type {
   FamilyAnswer,
   FamilyAnswers,
-  TextOrNone,
+  Presence,
 } from "@/lib/intake/types";
+
+// 保護者の画面は3つに分ける
+export type FamilyPage = "concern" | "condition" | "history";
 
 // 整数か小数1桁。値の大きさでは正しいかどうかを判断しない
 const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
@@ -28,18 +27,12 @@ const TEXT_INPUT_CLASS =
 const FIELD_LABEL_CLASS = "mb-4 block text-title";
 
 type FamilyScreenProps = {
+  page: FamilyPage;
   answers: FamilyAnswers;
   onChange: (update: Partial<FamilyAnswers>) => void;
   onNext: () => void;
   nextLabel: string;
 };
-
-// 空や空白だけなら未回答に戻す。書かれた文字はそのまま持つ
-function toTextAnswer(text: string): FamilyAnswer<string> {
-  return text.trim() === ""
-    ? { respondent: "family", status: "unanswered" }
-    : { respondent: "family", status: "answered", value: text };
-}
 
 function toChoiceAnswer<T>(value: T | null): FamilyAnswer<T> {
   return value === null
@@ -47,103 +40,69 @@ function toChoiceAnswer<T>(value: T | null): FamilyAnswer<T> {
     : { respondent: "family", status: "answered", value };
 }
 
-function textOf(answer: FamilyAnswer<string>): string {
-  return answer.status === "answered" ? answer.value : "";
-}
-
 function choiceOf<T>(answer: FamilyAnswer<T>): T | null {
   return answer.status === "answered" ? answer.value : null;
 }
 
-type TextFieldProps = {
-  id: string;
-  label: string;
-  answer: FamilyAnswer<string>;
-  onChange: (next: FamilyAnswer<string>) => void;
-  showCharCount?: boolean; // AI の要約に送る欄だけ、文字数を表示する
+const PRESENCE_OPTIONS = ["ある", "ない", "わからない"] as const;
+type PresenceOption = (typeof PRESENCE_OPTIONS)[number];
+
+const PRESENCE_OPTION: Record<Presence["kind"], PresenceOption> = {
+  yes: "ある",
+  no: "ない",
+  dont_know: "わからない",
 };
 
-function TextField({
-  id,
-  label,
-  answer,
-  onChange,
-  showCharCount = false,
-}: TextFieldProps) {
-  return (
-    <div>
-      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
-        {label}
-      </label>
-      <textarea
-        id={id}
-        rows={3}
-        autoComplete="off"
-        value={textOf(answer)}
-        onChange={(event) => onChange(toTextAnswer(event.target.value))}
-        className={TEXT_INPUT_CLASS}
-      />
-      {showCharCount && <CharCount text={textOf(answer)} />}
-    </div>
-  );
-}
-
-type TextOrNoneFieldProps = {
-  id: string;
-  label: string;
-  answer: FamilyAnswer<TextOrNone>;
-  onChange: (next: FamilyAnswer<TextOrNone>) => void;
+const OPTION_TO_PRESENCE: Record<PresenceOption, Presence> = {
+  ある: { kind: "yes", text: "" },
+  ない: { kind: "no" },
+  わからない: { kind: "dont_know" },
 };
 
-// 文字で書くか、「ない」「わからない」を選ぶ項目
-function TextOrNoneField({ id, label, answer, onChange }: TextOrNoneFieldProps) {
+type PresenceFieldProps = {
+  id: string;
+  label: string;
+  answer: FamilyAnswer<Presence>;
+  onChange: (next: FamilyAnswer<Presence>) => void;
+};
+
+// 最初に「ある／ない／わからない」を選び、「ある」のときだけ入力欄を出す。
+// ほかに変えると、書いた内容は消える（回答を選び直すと、値ごと入れ替わる）
+function PresenceField({ id, label, answer, onChange }: PresenceFieldProps) {
   const value = answer.status === "answered" ? answer.value : null;
-  const text = value?.kind === "text" ? value.text : "";
-
-  const toggle = (kind: "none" | "dont_know") => {
-    onChange(
-      value?.kind === kind
-        ? { respondent: "family", status: "unanswered" }
-        : { respondent: "family", status: "answered", value: { kind } },
-    );
-  };
 
   return (
     <div>
-      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
-        {label}
-      </label>
-      <textarea
-        id={id}
-        rows={3}
-        autoComplete="off"
-        value={text}
-        onChange={(event) => {
-          const next = event.target.value;
-          onChange(
-            next.trim() === ""
-              ? { respondent: "family", status: "unanswered" }
-              : {
-                  respondent: "family",
-                  status: "answered",
-                  value: { kind: "text", text: next },
-                },
-          );
-        }}
-        className={TEXT_INPUT_CLASS}
+      <SingleSelect
+        legend={label}
+        options={PRESENCE_OPTIONS}
+        selected={value ? PRESENCE_OPTION[value.kind] : null}
+        onChange={(next) =>
+          onChange(toChoiceAnswer(next ? OPTION_TO_PRESENCE[next] : null))
+        }
       />
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Chip
-          label="ない"
-          selected={value?.kind === "none"}
-          onClick={() => toggle("none")}
-        />
-        <Chip
-          label="わからない"
-          selected={value?.kind === "dont_know"}
-          onClick={() => toggle("dont_know")}
-        />
-      </div>
+      {value?.kind === "yes" && (
+        <div className="mt-4">
+          <label htmlFor={id} className="mb-2 block text-body">
+            内容（書かなくても大丈夫です）
+          </label>
+          <textarea
+            id={id}
+            rows={2}
+            autoComplete="off"
+            value={value.text}
+            onChange={(event) =>
+              onChange(
+                toChoiceAnswer<Presence>({
+                  kind: "yes",
+                  text: event.target.value,
+                }),
+              )
+            }
+            className={TEXT_INPUT_CLASS}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -172,7 +131,7 @@ function NumberField({
   answer,
   onChange,
 }: NumberFieldProps) {
-  const [text, setText] = useState(textOf(answer));
+  const [text, setText] = useState(choiceOf(answer) ?? "");
   const trimmed = text.trim();
   const isInvalid = trimmed !== "" && !pattern.test(trimmed);
 
@@ -194,11 +153,7 @@ function NumberField({
           onChange={(event) => {
             const next = event.target.value;
             setText(next);
-            onChange(
-              pattern.test(next.trim())
-                ? { respondent: "family", status: "answered", value: next.trim() }
-                : { respondent: "family", status: "unanswered" },
-            );
+            onChange(toChoiceAnswer(pattern.test(next.trim()) ? next.trim() : null));
           }}
           className={`${TEXT_INPUT_CLASS} min-w-0 flex-1 ${
             isInvalid ? "border-caution" : ""
@@ -215,224 +170,202 @@ function NumberField({
   );
 }
 
+function TemperatureField({
+  answer,
+  onChange,
+}: {
+  answer: FamilyAnswers["temperature"];
+  onChange: (next: FamilyAnswers["temperature"]) => void;
+}) {
+  const temperature = choiceOf(answer);
+  const [text, setText] = useState(
+    temperature?.kind === "measured" ? temperature.celsius : "",
+  );
+  const isNotMeasured = temperature?.kind === "not_measured";
+  const isInvalid = text.trim() !== "" && !TEMPERATURE_PATTERN.test(text.trim());
+
+  return (
+    <>
+      <label htmlFor="temperature" className={FIELD_LABEL_CLASS}>
+        熱
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id="temperature"
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          aria-describedby="temperature-hint"
+          aria-invalid={isInvalid}
+          value={text}
+          onChange={(event) => {
+            const next = event.target.value;
+            const trimmed = next.trim();
+            setText(next);
+            onChange(
+              toChoiceAnswer(
+                TEMPERATURE_PATTERN.test(trimmed)
+                  ? { kind: "measured", celsius: trimmed }
+                  : null,
+              ),
+            );
+          }}
+          className={`${TEXT_INPUT_CLASS} max-w-40 ${
+            isInvalid ? "border-caution" : ""
+          }`}
+        />
+        <span className="text-title">℃</span>
+      </div>
+      <p
+        id="temperature-hint"
+        className={`mt-2 text-support ${
+          isInvalid ? "font-bold text-caution" : "text-on-surface-variant"
+        }`}
+      >
+        {isInvalid
+          ? "数字で入れてください（例：37.5）。このままでは記録されません。"
+          : "例：37.5 または 38"}
+      </p>
+      <Chip
+        label="測っていない"
+        selected={isNotMeasured}
+        onClick={() => {
+          setText("");
+          onChange(toChoiceAnswer(isNotMeasured ? null : { kind: "not_measured" }));
+        }}
+        className="mt-3 w-full"
+      />
+    </>
+  );
+}
+
 export function FamilyScreen({
+  page,
   answers,
   onChange,
   onNext,
   nextLabel,
 }: FamilyScreenProps) {
-  const temperature =
-    answers.temperature.status === "answered"
-      ? answers.temperature.value
-      : null;
-  const [temperatureText, setTemperatureText] = useState(
-    temperature?.kind === "measured" ? temperature.celsius : "",
-  );
-  const isNotMeasured = temperature?.kind === "not_measured";
-  const isTemperatureInvalid =
-    temperatureText.trim() !== "" &&
-    !TEMPERATURE_PATTERN.test(temperatureText.trim());
+  const chiefConcernText = choiceOf(answers.chiefConcern) ?? "";
 
   return (
     <>
       <div className="stagger flex flex-1 flex-col gap-4 px-4 py-4">
-        <div className="grid grid-cols-2 gap-3">
-          <FieldCard field="age">
-            <NumberField
-              id="age"
-              label="年齢（任意）"
-              unit="歳"
-              inputMode="numeric"
-              pattern={AGE_PATTERN}
-              placeholder="例：8"
-              errorText="整数で入れてください。"
-              answer={answers.age}
-              onChange={(next) => onChange({ age: next })}
-            />
-          </FieldCard>
-          <FieldCard field="weight">
-            <NumberField
-              id="weight"
-              label="体重（任意）"
-              unit="kg"
-              inputMode="decimal"
-              pattern={WEIGHT_PATTERN}
-              placeholder="例：25"
-              errorText="数字で入れてください（例：25.5）。"
-              answer={answers.weight}
-              onChange={(next) => onChange({ weight: next })}
-            />
-          </FieldCard>
-        </div>
+        {page === "concern" && (
+          <>
+            <FieldCard field="chiefConcern">
+              <label htmlFor="chief-concern" className={FIELD_LABEL_CLASS}>
+                一番心配なこと（任意）
+              </label>
+              <textarea
+                id="chief-concern"
+                rows={3}
+                autoComplete="off"
+                value={chiefConcernText}
+                onChange={(event) =>
+                  onChange({
+                    chiefConcern: toChoiceAnswer(
+                      event.target.value.trim() === ""
+                        ? null
+                        : event.target.value,
+                    ),
+                  })
+                }
+                className={TEXT_INPUT_CLASS}
+              />
+              <CharCount text={chiefConcernText} />
+            </FieldCard>
+            <FieldCard field="onset">
+              <SingleSelect
+                legend="いつからですか？"
+                options={ONSET_OPTIONS}
+                selected={choiceOf(answers.onset)}
+                onChange={(next) => onChange({ onset: toChoiceAnswer(next) })}
+              />
+            </FieldCard>
+          </>
+        )}
 
-        <FieldCard field="chiefConcern">
-          <TextField
-            id="chief-concern"
-            label="保護者から見て、今いちばん心配な症状"
-            answer={answers.chiefConcern}
-            onChange={(next) => onChange({ chiefConcern: next })}
-            showCharCount
-          />
-        </FieldCard>
+        {page === "condition" && (
+          <>
+            <FieldCard field="temperature">
+              <TemperatureField
+                answer={answers.temperature}
+                onChange={(next) => onChange({ temperature: next })}
+              />
+            </FieldCard>
+            <FieldCard field="foodIntake">
+              <SingleSelect
+                legend="食べる・飲む"
+                options={FOOD_INTAKE_OPTIONS}
+                selected={choiceOf(answers.foodIntake)}
+                onChange={(next) =>
+                  onChange({ foodIntake: toChoiceAnswer(next) })
+                }
+              />
+            </FieldCard>
+          </>
+        )}
 
-        <FieldCard field="onset">
-          <SingleSelect
-            legend="いつからですか？"
-            options={ONSET_OPTIONS}
-            selected={choiceOf(answers.onset)}
-            onChange={(next) => onChange({ onset: toChoiceAnswer(next) })}
-          />
-          <div className="mt-4">
-            <label htmlFor="onset-detail" className="mb-2 block text-body">
-              くわしい時刻など（書かなくても大丈夫です）
-            </label>
-            <input
-              id="onset-detail"
-              type="text"
-              autoComplete="off"
-              value={textOf(answers.onsetDetail)}
-              onChange={(event) =>
-                onChange({ onsetDetail: toTextAnswer(event.target.value) })
-              }
-              className={TEXT_INPUT_CLASS}
-            />
-            <CharCount text={textOf(answers.onsetDetail)} />
-          </div>
-        </FieldCard>
-
-        <FieldCard field="course">
-          <SingleSelect
-            legend="ようすはどう変わってきましたか？"
-            options={COURSE_OPTIONS}
-            selected={choiceOf(answers.course)}
-            onChange={(next) => onChange({ course: toChoiceAnswer(next) })}
-          />
-        </FieldCard>
-
-        <FieldCard field="temperature">
-          <label htmlFor="temperature" className={FIELD_LABEL_CLASS}>
-            体温（測っていれば）
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="temperature"
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              aria-describedby="temperature-hint"
-              aria-invalid={isTemperatureInvalid}
-              value={temperatureText}
-              onChange={(event) => {
-                const text = event.target.value;
-                const trimmed = text.trim();
-                setTemperatureText(text);
-                onChange({
-                  temperature: TEMPERATURE_PATTERN.test(trimmed)
-                    ? {
-                        respondent: "family",
-                        status: "answered",
-                        value: { kind: "measured", celsius: trimmed },
-                      }
-                    : { respondent: "family", status: "unanswered" },
-                });
-              }}
-              className={`${TEXT_INPUT_CLASS} max-w-40 ${
-                isTemperatureInvalid ? "border-caution" : ""
-              }`}
-            />
-            <span className="text-title">℃</span>
-          </div>
-          <p
-            id="temperature-hint"
-            className={`mt-2 text-support ${
-              isTemperatureInvalid
-                ? "font-bold text-caution"
-                : "text-on-surface-variant"
-            }`}
-          >
-            {isTemperatureInvalid
-              ? "数字で入れてください（例：37.5 または 38）。このままでは記録されません。"
-              : "例：37.5 または 38"}
-          </p>
-          <Chip
-            label="測っていない"
-            selected={isNotMeasured}
-            onClick={() => {
-              setTemperatureText("");
-              onChange({
-                temperature: isNotMeasured
-                  ? { respondent: "family", status: "unanswered" }
-                  : {
-                      respondent: "family",
-                      status: "answered",
-                      value: { kind: "not_measured" },
-                    },
-              });
-            }}
-            className="mt-3 w-full"
-          />
-        </FieldCard>
-
-        <FieldCard field="foodIntake">
-          <SingleSelect
-            legend="食事や水分はとれていますか？"
-            options={FOOD_INTAKE_OPTIONS}
-            selected={choiceOf(answers.foodIntake)}
-            onChange={(next) => onChange({ foodIntake: toChoiceAnswer(next) })}
-          />
-        </FieldCard>
-
-        <FieldCard field="differences">
-          <TextField
-            id="differences"
-            label="普段とちがうところ（表情、行動、歩き方など）"
-            answer={answers.differences}
-            onChange={(next) => onChange({ differences: next })}
-            showCharCount
-          />
-        </FieldCard>
-
-        <FieldCard field="conditions">
-          <TextField
-            id="conditions"
-            label="持病・これまでの病気"
-            answer={answers.conditions}
-            onChange={(next) => onChange({ conditions: next })}
-          />
-        </FieldCard>
-
-        <FieldCard field="medications">
-          <TextOrNoneField
-            id="medications"
-            label="飲んでいる薬"
-            answer={answers.medications}
-            onChange={(next) => onChange({ medications: next })}
-          />
-        </FieldCard>
-
-        <FieldCard field="allergies">
-          <TextOrNoneField
-            id="allergies"
-            label="アレルギー"
-            answer={answers.allergies}
-            onChange={(next) => onChange({ allergies: next })}
-          />
-        </FieldCard>
-
-        <FieldCard field="consultation">
-          <TextField
-            id="consultation"
-            label="今日相談したいこと"
-            answer={answers.consultation}
-            onChange={(next) => onChange({ consultation: next })}
-            showCharCount
-          />
-        </FieldCard>
+        {page === "history" && (
+          <>
+            <FieldCard field="medications">
+              <PresenceField
+                id="medications"
+                label="飲んでいる薬"
+                answer={answers.medications}
+                onChange={(next) => onChange({ medications: next })}
+              />
+            </FieldCard>
+            <FieldCard field="allergies">
+              <PresenceField
+                id="allergies"
+                label="アレルギー"
+                answer={answers.allergies}
+                onChange={(next) => onChange({ allergies: next })}
+              />
+            </FieldCard>
+            <FieldCard field="conditions">
+              <PresenceField
+                id="conditions"
+                label="持病"
+                answer={answers.conditions}
+                onChange={(next) => onChange({ conditions: next })}
+              />
+            </FieldCard>
+            <div className="grid grid-cols-2 gap-3">
+              <FieldCard field="age">
+                <NumberField
+                  id="age"
+                  label="年齢（任意）"
+                  unit="歳"
+                  inputMode="numeric"
+                  pattern={AGE_PATTERN}
+                  placeholder="例：8"
+                  errorText="整数で入れてください。"
+                  answer={answers.age}
+                  onChange={(next) => onChange({ age: next })}
+                />
+              </FieldCard>
+              <FieldCard field="weight">
+                <NumberField
+                  id="weight"
+                  label="体重（任意）"
+                  unit="kg"
+                  inputMode="decimal"
+                  pattern={WEIGHT_PATTERN}
+                  placeholder="例：25"
+                  errorText="数字で入れてください（例：25.5）。"
+                  answer={answers.weight}
+                  onChange={(next) => onChange({ weight: next })}
+                />
+              </FieldCard>
+            </div>
+          </>
+        )}
       </div>
       <BottomBar>
-        <Button onClick={onNext}>
-          {nextLabel}
-        </Button>
+        <Button onClick={onNext}>{nextLabel}</Button>
       </BottomBar>
     </>
   );

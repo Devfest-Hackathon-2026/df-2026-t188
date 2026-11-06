@@ -1,12 +1,11 @@
 // 受け取ったデータと Gemini の出力の形を確かめる。形が違えば null を返す。
 import {
   BODY_PARTS,
-  COURSE_OPTIONS,
+  DISCOMFORT_TEXTS,
   FEELING_NOT_SENT,
   FEELINGS,
   FOOD_INTAKE_OPTIONS,
   ONSET_OPTIONS,
-  SENSATIONS,
 } from "@/lib/intake/options";
 import {
   countChars,
@@ -64,15 +63,6 @@ function isChoiceList<T extends string>(
   );
 }
 
-function isPainLevel(value: unknown): boolean {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 0 &&
-    value <= 10
-  );
-}
-
 function isTemperature(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -85,23 +75,16 @@ const SENDABLE_FEELINGS = FEELINGS.filter(
 );
 
 const PATIENT_CHECKS: Record<string, (value: unknown) => boolean> = {
+  bodyParts: (value) => isChoiceList(value, BODY_PARTS),
   feelings: (value) => isChoiceList(value, SENDABLE_FEELINGS),
-  chiefComplaint: isLimitedText,
-  painLocations: (value) => isChoiceList(value, BODY_PARTS),
-  painLevel: isPainLevel,
-  sensations: (value) => isChoiceList(value, SENSATIONS),
-  sensationOther: isLimitedText,
+  discomfort: (value) => isChoice(value, DISCOMFORT_TEXTS),
 };
 
 const FAMILY_CHECKS: Record<string, (value: unknown) => boolean> = {
   chiefConcern: isLimitedText,
   onset: (value) => isChoice(value, ONSET_OPTIONS),
-  onsetDetail: isLimitedText,
-  course: (value) => isChoice(value, COURSE_OPTIONS),
   temperature: isTemperature,
   foodIntake: (value) => isChoice(value, FOOD_INTAKE_OPTIONS),
-  differences: isLimitedText,
-  consultation: isLimitedText,
 };
 
 function passesChecks(

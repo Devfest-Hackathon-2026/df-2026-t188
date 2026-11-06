@@ -1,18 +1,16 @@
+// 「どこが へん？」の選択肢。記録する値はこの言葉で、Gemini と医師の画面にもこのまま出す。
+// こどもの画面だけ、ひらがなの言葉を出す（PatientScreen の BODY_PART_LABELS）
 export const BODY_PARTS = [
   "頭",
-  "顔・口",
+  "耳",
   "のど",
   "胸",
   "お腹",
-  "背中・腰",
-  "手・腕",
-  "足",
+  "手・足",
   "その他",
-  "痛いところはない",
-  "わからない",
 ] as const;
 
-// 本人の画面の最初の「どんなかんじが する？」。選んだ言葉のまま記録する
+// 「どんな かんじ？」の選択肢。選んだ言葉のまま記録する
 export const FEELINGS = [
   "いたい",
   "きもちわるい",
@@ -26,15 +24,26 @@ export const FEELINGS = [
 // Gemini に送らない選択肢（「そのほか」と「わからない」が混ざっていて、症状として読めないため）
 export const FEELING_NOT_SENT = "そのほか・わからない";
 
-export const SENSATIONS = [
-  "ズキズキ",
-  "チクチク",
-  "しめつけられる",
-  "気持ち悪い",
-  "めまい",
-  "だるい",
-  "わからない",
+// 「どれくらい つらい？」の5段階。選んだ段階（1〜5）を記録する。数字に換算しない
+export const DISCOMFORT_LABELS = [
+  "へいき",
+  "すこし つらい",
+  "つらい",
+  "とても つらい",
+  "すごく つらい",
 ] as const;
+
+export type DiscomfortLevel = 1 | 2 | 3 | 4 | 5;
+
+export const DISCOMFORT_LEVELS: readonly DiscomfortLevel[] = [1, 2, 3, 4, 5];
+
+// 医師の画面と Gemini に出す形。例：「とても つらい（5段階の4）」
+export function discomfortText(level: DiscomfortLevel): string {
+  return `${DISCOMFORT_LABELS[level - 1]}（5段階の${level}）`;
+}
+
+export const DISCOMFORT_TEXTS: readonly string[] =
+  DISCOMFORT_LEVELS.map(discomfortText);
 
 export const ONSET_OPTIONS = [
   "今日",
@@ -45,31 +54,13 @@ export const ONSET_OPTIONS = [
   "わからない",
 ] as const;
 
-export const COURSE_OPTIONS = [
-  "良くなっている",
-  "変わらない",
-  "悪くなっている",
-  "波がある",
-  "わからない",
-] as const;
-
 export const FOOD_INTAKE_OPTIONS = [
   "いつもどおり",
   "少ない",
-  "ほとんど取れていない",
-  "わからない",
+  "ほとんどない",
 ] as const;
 
 export type BodyPart = (typeof BODY_PARTS)[number];
 export type Feeling = (typeof FEELINGS)[number];
-export type Sensation = (typeof SENSATIONS)[number];
 export type Onset = (typeof ONSET_OPTIONS)[number];
-export type Course = (typeof COURSE_OPTIONS)[number];
 export type FoodIntake = (typeof FOOD_INTAKE_OPTIONS)[number];
-
-// ほかの選択肢と同時に選べない選択肢
-export const EXCLUSIVE_BODY_PARTS: readonly BodyPart[] = [
-  "痛いところはない",
-  "わからない",
-];
-export const EXCLUSIVE_SENSATIONS: readonly Sensation[] = ["わからない"];

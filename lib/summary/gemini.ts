@@ -105,21 +105,14 @@ function buildPrompt(input: SummaryInput): string {
   return [
     section("本人の回答", [
       ...line("どんなかんじ（本人が選んだもの）", patient.feelings?.join("、")),
-      ...line("今いちばん困っていること", patient.chiefComplaint),
-      ...line("痛い場所", patient.painLocations?.join("、")),
-      ...line("痛みの程度（0〜10）", patient.painLevel),
-      ...line("感覚", patient.sensations?.join("、")),
-      ...line("感覚（その他・本人の言葉）", patient.sensationOther),
+      ...line("へんなところ（本人が選んだもの）", patient.bodyParts?.join("、")),
+      ...line("つらさ（本人が選んだもの）", patient.discomfort),
     ]),
     section("介在者（家族・介護者）の回答", [
       ...line("家族から見て、今いちばん心配な症状", family.chiefConcern),
       ...line("いつから", family.onset),
-      ...line("いつから（くわしい時刻など）", family.onsetDetail),
-      ...line("経過", family.course),
       ...line("体温", family.temperature),
       ...line("食事・水分", family.foodIntake),
-      ...line("普段との違い", family.differences),
-      ...line("今日相談したいこと", family.consultation),
     ]),
   ].join("\n\n");
 }

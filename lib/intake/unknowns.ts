@@ -1,13 +1,14 @@
 // 「不明」の判定と、医師に見せる画面の行づくり。すべてルールで行い、AIは使わない。
 // 回答の内容を解釈したり、ある回答から別の回答を推測したりしない。
+import { discomfortText } from "./options";
 import type {
   Answer,
   FamilyAnswer,
   FamilyAnswers,
   PatientAnswers,
+  Presence,
   Respondent,
   Temperature,
-  TextOrNone,
 } from "./types";
 
 export type AnswerState = "answered" | "dont_know" | "unanswered" | "unable";
@@ -40,42 +41,30 @@ function describe<T>(
 const neverDontKnow = () => false;
 const asWritten = (value: string) => value;
 const isDontKnowChoice = (value: string) => value === DONT_KNOW;
-const isDontKnowList = (values: readonly string[]) =>
-  values.includes(DONT_KNOW);
 const joinList = (values: readonly string[]) => values.join("、");
 
-const isDontKnowTextOrNone = (value: TextOrNone) => value.kind === "dont_know";
-const formatTextOrNone = (value: TextOrNone) => {
-  if (value.kind === "text") return value.text;
-  if (value.kind === "none") return "ない（と回答）";
-  return "";
+const isDontKnowPresence = (value: Presence) => value.kind === "dont_know";
+
+const NO_DETAIL = "内容の記入なし";
+
+const formatPresence = (value: Presence) => {
+  if (value.kind === "no") return "ない（と回答）";
+  if (value.kind === "dont_know") return "";
+  return value.text.trim() === "" ? `あり（${NO_DETAIL}）` : value.text;
 };
 
 const formatTemperature = (value: Temperature) =>
   value.kind === "measured" ? `${value.celsius} ℃` : "測っていない";
 
-export function patientChiefRow(patient: PatientAnswers): AnswerRow {
-  return {
-    key: "chiefComplaint",
-    respondent: "patient",
-    label: "本人の言葉（今いちばん困っていること）",
-    required: false,
-    ...describe(patient.chiefComplaint, neverDontKnow, asWritten),
-  };
-}
-
-export function familyChiefRow(family: FamilyAnswers): AnswerRow {
-  return {
-    key: "chiefConcern",
-    respondent: "family",
-    label: "保護者から見た症状（今いちばん心配な症状）",
-    required: true,
-    ...describe(family.chiefConcern, neverDontKnow, asWritten),
-  };
-}
-
 export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
   return [
+    {
+      key: "bodyParts",
+      respondent: "patient",
+      label: "へんなところ（本人が選んだもの）",
+      required: true,
+      ...describe(patient.bodyParts, neverDontKnow, joinList),
+    },
     {
       key: "feelings",
       respondent: "patient",
@@ -84,42 +73,24 @@ export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
       ...describe(patient.feelings, neverDontKnow, joinList),
     },
     {
-      key: "painLocations",
+      key: "discomfort",
       respondent: "patient",
-      label: "痛い場所",
+      label: "つらさ（本人が選んだもの）",
       required: true,
-      ...describe(patient.painLocations, isDontKnowList, joinList),
-    },
-    {
-      key: "painLevel",
-      respondent: "patient",
-      label: "痛みの程度",
-      required: true,
-      ...describe(
-        patient.painLevel,
-        neverDontKnow,
-        (value) => `${value}（0〜10のうち）`,
-      ),
-    },
-    {
-      key: "sensations",
-      respondent: "patient",
-      label: "感覚",
-      required: false,
-      ...describe(patient.sensations, isDontKnowList, joinList),
-    },
-    {
-      key: "sensationOther",
-      respondent: "patient",
-      label: "感覚（その他・本人の言葉）",
-      required: false,
-      ...describe(patient.sensationOther, neverDontKnow, asWritten),
+      ...describe(patient.discomfort, neverDontKnow, discomfortText),
     },
   ];
 }
 
 export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
   return [
+    {
+      key: "chiefConcern",
+      respondent: "family",
+      label: "一番心配なこと",
+      required: false,
+      ...describe(family.chiefConcern, neverDontKnow, asWritten),
+    },
     {
       key: "onset",
       respondent: "family",
@@ -128,39 +99,39 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       ...describe(family.onset, isDontKnowChoice, asWritten),
     },
     {
-      key: "onsetDetail",
-      respondent: "family",
-      label: "いつから（くわしい時刻など）",
-      required: false,
-      ...describe(family.onsetDetail, neverDontKnow, asWritten),
-    },
-    {
-      key: "course",
-      respondent: "family",
-      label: "経過",
-      required: true,
-      ...describe(family.course, isDontKnowChoice, asWritten),
-    },
-    {
       key: "temperature",
       respondent: "family",
-      label: "体温",
+      label: "熱",
       required: false,
       ...describe(family.temperature, neverDontKnow, formatTemperature),
     },
     {
       key: "foodIntake",
       respondent: "family",
-      label: "食事・水分",
+      label: "食べる・飲む",
       required: false,
-      ...describe(family.foodIntake, isDontKnowChoice, asWritten),
+      ...describe(family.foodIntake, neverDontKnow, asWritten),
     },
     {
-      key: "differences",
+      key: "medications",
       respondent: "family",
-      label: "普段との違い",
+      label: "飲んでいる薬",
+      required: true,
+      ...describe(family.medications, isDontKnowPresence, formatPresence),
+    },
+    {
+      key: "allergies",
+      respondent: "family",
+      label: "アレルギー",
+      required: true,
+      ...describe(family.allergies, isDontKnowPresence, formatPresence),
+    },
+    {
+      key: "conditions",
+      respondent: "family",
+      label: "持病",
       required: false,
-      ...describe(family.differences, neverDontKnow, asWritten),
+      ...describe(family.conditions, isDontKnowPresence, formatPresence),
     },
     {
       key: "age",
@@ -176,34 +147,6 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       required: false,
       ...describe(family.weight, neverDontKnow, (value) => `${value} kg`),
     },
-    {
-      key: "conditions",
-      respondent: "family",
-      label: "持病・これまでの病気",
-      required: false,
-      ...describe(family.conditions, neverDontKnow, asWritten),
-    },
-    {
-      key: "medications",
-      respondent: "family",
-      label: "飲んでいる薬",
-      required: true,
-      ...describe(family.medications, isDontKnowTextOrNone, formatTextOrNone),
-    },
-    {
-      key: "allergies",
-      respondent: "family",
-      label: "アレルギー",
-      required: true,
-      ...describe(family.allergies, isDontKnowTextOrNone, formatTextOrNone),
-    },
-    {
-      key: "consultation",
-      respondent: "family",
-      label: "今日相談したいこと",
-      required: false,
-      ...describe(family.consultation, neverDontKnow, asWritten),
-    },
   ];
 }
 
@@ -212,11 +155,28 @@ export function getUnknownRows(
   patient: PatientAnswers,
   family: FamilyAnswers,
 ): AnswerRow[] {
-  return [
-    ...buildPatientRows(patient),
-    familyChiefRow(family),
-    ...buildFamilyRows(family),
-  ].filter((row) => row.required && row.state !== "answered");
+  return [...buildPatientRows(patient), ...buildFamilyRows(family)].filter(
+    (row) => row.required && row.state !== "answered",
+  );
+}
+
+export type SafetyNotice = { kind: "present" | "unconfirmed"; text: string };
+
+// 医師の画面の閉じた状態に出す、薬・アレルギーの1行。
+// 「ある」は目立つ行、「わからない」「未回答」は小さめの「未確認」、「ない」は何も出さない
+export function safetyNotice(
+  label: string,
+  answer: FamilyAnswer<Presence>,
+): SafetyNotice | null {
+  if (answer.status === "unanswered" || answer.value.kind === "dont_know") {
+    return { kind: "unconfirmed", text: `${label}：未確認` };
+  }
+  if (answer.value.kind === "no") return null;
+  const detail = answer.value.text.trim();
+  return {
+    kind: "present",
+    text: `⚠ ${label}あり：${detail === "" ? `（${NO_DETAIL}）` : answer.value.text}`,
+  };
 }
 
 export function missingStateLabel(

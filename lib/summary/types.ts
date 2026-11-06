@@ -1,14 +1,11 @@
 import type {
   BodyPart,
-  Course,
   Feeling,
   FoodIntake,
   Onset,
-  Sensation,
 } from "@/lib/intake/options";
-import type { PainLevel } from "@/lib/intake/types";
 
-// Gemini に送る文字入力の欄それぞれの上限（文字数）
+// Gemini に送る文字入力の欄の上限（文字数）
 export const SUMMARY_TEXT_LIMIT = 500;
 
 export function countChars(text: string): number {
@@ -19,22 +16,15 @@ export function countChars(text: string): number {
 // 飲んでいる薬・持病・アレルギー・年齢・体重は入れない（型にも持たせない）
 export type SummaryInput = {
   patient: {
+    bodyParts?: BodyPart[];
     feelings?: Feeling[]; // 「そのほか・わからない」は入れない
-    chiefComplaint?: string;
-    painLocations?: BodyPart[];
-    painLevel?: PainLevel;
-    sensations?: Sensation[];
-    sensationOther?: string; // 感覚のその他（本人が自分の言葉で書いた文章）
+    discomfort?: string; // 例：「とても つらい（5段階の4）」。数字に換算しない
   };
   family: {
     chiefConcern?: string;
     onset?: Onset;
-    onsetDetail?: string;
-    course?: Course;
     temperature?: string; // 例："38.5 ℃"、"測っていない"
     foodIntake?: FoodIntake;
-    differences?: string;
-    consultation?: string;
   };
 };
 
