@@ -4,7 +4,7 @@ export type TopBarTone = "patient" | "family" | "neutral";
 
 const TONE_CLASS: Record<TopBarTone, string> = {
   patient: "bg-patient text-on-patient", // 本人（青系）
-  family: "bg-family text-on-family", // 家族・介護者（紫系）
+  family: "bg-family text-on-family", // 保護者（紫系）
   neutral: "bg-inverse-surface text-inverse-on-surface", // そのほかの画面
 };
 

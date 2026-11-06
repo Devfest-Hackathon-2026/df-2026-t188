@@ -12,6 +12,20 @@ export const BODY_PARTS = [
   "わからない",
 ] as const;
 
+// 本人の画面の最初の「どんなかんじが する？」。選んだ言葉のまま記録する
+export const FEELINGS = [
+  "いたい",
+  "きもちわるい",
+  "だるい",
+  "いきが くるしい",
+  "せきが でる",
+  "ねつっぽい",
+  "そのほか・わからない",
+] as const;
+
+// Gemini に送らない選択肢（「そのほか」と「わからない」が混ざっていて、症状として読めないため）
+export const FEELING_NOT_SENT = "そのほか・わからない";
+
 export const SENSATIONS = [
   "ズキズキ",
   "チクチク",
@@ -47,6 +61,7 @@ export const FOOD_INTAKE_OPTIONS = [
 ] as const;
 
 export type BodyPart = (typeof BODY_PARTS)[number];
+export type Feeling = (typeof FEELINGS)[number];
 export type Sensation = (typeof SENSATIONS)[number];
 export type Onset = (typeof ONSET_OPTIONS)[number];
 export type Course = (typeof COURSE_OPTIONS)[number];

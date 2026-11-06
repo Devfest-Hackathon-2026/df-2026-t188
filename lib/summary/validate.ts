@@ -2,6 +2,8 @@
 import {
   BODY_PARTS,
   COURSE_OPTIONS,
+  FEELING_NOT_SENT,
+  FEELINGS,
   FOOD_INTAKE_OPTIONS,
   ONSET_OPTIONS,
   SENSATIONS,
@@ -78,7 +80,12 @@ function isTemperature(value: unknown): value is string {
   );
 }
 
+const SENDABLE_FEELINGS = FEELINGS.filter(
+  (feeling) => feeling !== FEELING_NOT_SENT,
+);
+
 const PATIENT_CHECKS: Record<string, (value: unknown) => boolean> = {
+  feelings: (value) => isChoiceList(value, SENDABLE_FEELINGS),
   chiefComplaint: isLimitedText,
   painLocations: (value) => isChoiceList(value, BODY_PARTS),
   painLevel: isPainLevel,

@@ -21,7 +21,7 @@ export function FieldCard({
       id={fieldId(field)}
       tabIndex={-1}
       className={`scroll-mt-32 outline-none ${
-        bare ? "" : "rounded-lg bg-surface-container-lowest p-4 shadow-card"
+        bare ? "" : "card-frame rounded-lg bg-surface-container-lowest p-4"
       }`}
     >
       {children}

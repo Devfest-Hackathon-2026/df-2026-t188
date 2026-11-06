@@ -108,7 +108,7 @@ export function useSummary(
   return { kind: "loading" };
 }
 
-const RESPONDENT_LABEL = { patient: "本人", family: "家族・介護者" } as const;
+const RESPONDENT_LABEL = { patient: "本人", family: "保護者" } as const;
 
 function SummaryText({ text, emptyText }: { text: string; emptyText: string }) {
   return text === "" ? (
@@ -130,7 +130,7 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
         AIによる要約
       </h2>
       <p className="mt-2 rounded-sm bg-surface-container-highest p-2 text-body font-bold">
-        患者・家族が入力した内容を AI が整理したものです。診断ではありません。
+        本人・保護者が入力した内容を AI が整理したものです。診断ではありません。
       </p>
 
       {status.kind === "empty" && (
@@ -181,17 +181,17 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
           </div>
           <div className="border-t border-outline-variant pt-4">
             <h3 className="flex flex-wrap items-center gap-2 text-label font-bold">
-              <Badge kind="family">家族</Badge>
-              介在者（家族・介護者）の回答の要約
+              <Badge kind="family">保護者</Badge>
+              保護者の回答の要約
             </h3>
             <SummaryText
               text={status.summary.familySummary}
-              emptyText="要約する介在者の回答がありません。"
+              emptyText="要約する保護者の回答がありません。"
             />
           </div>
           <div className="border-t border-outline-variant pt-4">
             <h3 className="text-label font-bold">
-              本人と介在者で食い違っている点（AIが見つけたもの）
+              本人と保護者で食い違っている点（AIが見つけたもの）
             </h3>
             {status.summary.discrepancies.length === 0 ? (
               <p className="mt-1 text-body text-on-surface-variant">なし</p>
@@ -204,7 +204,7 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
                     <span className="font-bold text-patient">本人：</span>
                     {item.patient}
                     <br />
-                    <span className="font-bold text-family">介在者：</span>
+                    <span className="font-bold text-family">保護者：</span>
                     {item.family}
                   </li>
                 ))}

@@ -1,6 +1,7 @@
 import type {
   BodyPart,
   Course,
+  Feeling,
   FoodIntake,
   Onset,
   Sensation,
@@ -15,9 +16,10 @@ export function countChars(text: string): number {
 }
 
 // Gemini に送るデータ。回答ありの項目だけを入れる。
-// 飲んでいる薬・持病・アレルギーは入れない（型にも持たせない）
+// 飲んでいる薬・持病・アレルギー・年齢・体重は入れない（型にも持たせない）
 export type SummaryInput = {
   patient: {
+    feelings?: Feeling[]; // 「そのほか・わからない」は入れない
     chiefComplaint?: string;
     painLocations?: BodyPart[];
     painLevel?: PainLevel;

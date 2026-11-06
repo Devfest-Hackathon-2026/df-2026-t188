@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { CheckDot, SelectedLayer } from "@/components/ui/Chip";
 
 export type CardOption<T extends string> = {
-  value: T; // 記録する選択肢（画面にもこの文字を出す）
+  value: T; // 記録する選択肢。Gemini と医師の画面にはこの文字を出す
+  label?: string; // この画面だけに出す言葉（例：「頭」を「あたま」と出す）。なければ value を出す
   description?: string; // 選ぶときの手がかりになる短い説明（記録も送信もしない）
   icon?: ReactNode;
 };
@@ -44,18 +45,18 @@ export function MultiSelect<T extends string>({
     <fieldset>
       <legend className="mb-3 text-title">{legend}</legend>
       <div className="grid grid-cols-2 gap-3">
-        {options.map(({ value, description, icon }) => {
+        {options.map(({ value, label = value, description, icon }) => {
           const isSelected = selected.includes(value);
-          const name = <span className="text-label font-bold">{value}</span>;
+          const name = <span className="text-label font-bold">{label}</span>;
           return (
             <button
               key={value}
               type="button"
               aria-pressed={isSelected}
               onClick={() => toggle(value)}
-              className={`press-feedback chunky relative flex min-h-18 flex-col gap-1 rounded-lg border border-outline bg-surface-container-lowest p-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
+              className={`press-feedback chunky relative flex min-h-18 flex-col gap-1 rounded-lg border-2 border-card-line bg-surface-container-lowest p-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
                 isSelected ? "text-on-primary-container" : "text-on-surface"
-              } ${value.length >= WIDE_CARD_LABEL_LENGTH ? "col-span-2" : ""}`}
+              } ${label.length >= WIDE_CARD_LABEL_LENGTH ? "col-span-2" : ""}`}
             >
               <SelectedLayer rounded="rounded-lg" />
               {/* アイコンがあるときは上の段にアイコン、ないときは上の段に名前を置く */}

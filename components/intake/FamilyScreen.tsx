@@ -18,9 +18,12 @@ import type {
 
 // 整数か小数1桁。値の大きさでは正しいかどうかを判断しない
 const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
+// 年齢は整数、体重は整数か小数1桁。値の大きさでは判断しない
+const AGE_PATTERN = /^[0-9０-９]+$/;
+const WEIGHT_PATTERN = TEMPERATURE_PATTERN;
 
 const TEXT_INPUT_CLASS =
-  "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
+  "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface placeholder:text-on-surface-variant focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
 
 const FIELD_LABEL_CLASS = "mb-4 block text-title";
 
@@ -145,6 +148,73 @@ function TextOrNoneField({ id, label, answer, onChange }: TextOrNoneFieldProps) 
   );
 }
 
+type NumberFieldProps = {
+  id: string;
+  label: string;
+  unit: string;
+  inputMode: "numeric" | "decimal";
+  pattern: RegExp;
+  placeholder: string;
+  errorText: string;
+  answer: FamilyAnswer<string>;
+  onChange: (next: FamilyAnswer<string>) => void;
+};
+
+// 数字を入れる項目（年齢・体重）。形が違うあいだは記録せず、知らせる
+function NumberField({
+  id,
+  label,
+  unit,
+  inputMode,
+  pattern,
+  placeholder,
+  errorText,
+  answer,
+  onChange,
+}: NumberFieldProps) {
+  const [text, setText] = useState(textOf(answer));
+  const trimmed = text.trim();
+  const isInvalid = trimmed !== "" && !pattern.test(trimmed);
+
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-label font-bold">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="text"
+          inputMode={inputMode}
+          autoComplete="off"
+          placeholder={placeholder}
+          aria-describedby={isInvalid ? `${id}-error` : undefined}
+          aria-invalid={isInvalid}
+          value={text}
+          onChange={(event) => {
+            const next = event.target.value;
+            setText(next);
+            onChange(
+              pattern.test(next.trim())
+                ? { respondent: "family", status: "answered", value: next.trim() }
+                : { respondent: "family", status: "unanswered" },
+            );
+          }}
+          className={`${TEXT_INPUT_CLASS} min-w-0 flex-1 ${
+            isInvalid ? "border-caution" : ""
+          }`}
+        />
+        <span className="text-body">{unit}</span>
+      </div>
+      {isInvalid && (
+        <p id={`${id}-error`} className="mt-2 text-support font-bold text-caution">
+          {errorText}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function FamilyScreen({
   answers,
   onChange,
@@ -166,10 +236,39 @@ export function FamilyScreen({
   return (
     <>
       <div className="stagger flex flex-1 flex-col gap-4 px-4 py-4">
+        <div className="grid grid-cols-2 gap-3">
+          <FieldCard field="age">
+            <NumberField
+              id="age"
+              label="年齢（任意）"
+              unit="歳"
+              inputMode="numeric"
+              pattern={AGE_PATTERN}
+              placeholder="例：8"
+              errorText="整数で入れてください。"
+              answer={answers.age}
+              onChange={(next) => onChange({ age: next })}
+            />
+          </FieldCard>
+          <FieldCard field="weight">
+            <NumberField
+              id="weight"
+              label="体重（任意）"
+              unit="kg"
+              inputMode="decimal"
+              pattern={WEIGHT_PATTERN}
+              placeholder="例：25"
+              errorText="数字で入れてください（例：25.5）。"
+              answer={answers.weight}
+              onChange={(next) => onChange({ weight: next })}
+            />
+          </FieldCard>
+        </div>
+
         <FieldCard field="chiefConcern">
           <TextField
             id="chief-concern"
-            label="家族から見て、今いちばん心配な症状"
+            label="保護者から見て、今いちばん心配な症状"
             answer={answers.chiefConcern}
             onChange={(next) => onChange({ chiefConcern: next })}
             showCharCount

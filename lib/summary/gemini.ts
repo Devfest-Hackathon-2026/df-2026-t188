@@ -104,6 +104,7 @@ function buildPrompt(input: SummaryInput): string {
 
   return [
     section("本人の回答", [
+      ...line("どんなかんじ（本人が選んだもの）", patient.feelings?.join("、")),
       ...line("今いちばん困っていること", patient.chiefComplaint),
       ...line("痛い場所", patient.painLocations?.join("、")),
       ...line("痛みの程度（0〜10）", patient.painLevel),

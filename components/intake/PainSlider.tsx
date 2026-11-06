@@ -23,9 +23,9 @@ type PainSliderProps = {
 };
 
 function statusText(answer: Answer<PainLevel, "patient">) {
-  if (answer.status === "answered") return `いまの痛み：${answer.value}`;
-  if (answer.status === "unable") return "回答困難";
-  return "未回答";
+  if (answer.status === "answered") return `いまの いたさ：${answer.value}`;
+  if (answer.status === "unable") return "こたえられない";
+  return "まだ えらんでいないよ";
 }
 
 export function PainSlider({ answer, onChange }: PainSliderProps) {
@@ -62,7 +62,7 @@ export function PainSlider({ answer, onChange }: PainSliderProps) {
   return (
     <div>
       <p className="mb-4 text-title" id="pain-level-label">
-        痛みはどのくらいですか？
+        いたさは どのくらい？
       </p>
       {/* 数値を大きく見せる。顔のアイコンは見た目の反応だけで、記録も送信もしない。
           未回答と「答えられない」のときは、顔を出さない */}
@@ -81,7 +81,7 @@ export function PainSlider({ answer, onChange }: PainSliderProps) {
         {isAnswered ? (
           <p>
             <span className="block text-support text-on-surface-variant">
-              いまの痛み
+              いまの いたさ
             </span>
             <span className="text-[2.5rem] leading-none font-bold">
               {answer.value}
@@ -112,15 +112,11 @@ export function PainSlider({ answer, onChange }: PainSliderProps) {
         className="pain-slider"
       />
       <div className="mt-2 flex justify-between gap-6 text-body">
-        {/* 文言は変えない。幅が狭いときは、区切りのよい位置で折り返す */}
-        <span className="shrink-0">0：痛くない</span>
-        <span className="text-right">
-          <span className="inline-block">10：考えられる</span>
-          <span className="inline-block">一番の痛み</span>
-        </span>
+        <span className="shrink-0">0：いたくない</span>
+        <span className="text-right">10：いちばん いたい</span>
       </div>
       <Chip
-        label="答えられない"
+        label="こたえられない"
         selected={answer.status === "unable"}
         onClick={() =>
           onChange({

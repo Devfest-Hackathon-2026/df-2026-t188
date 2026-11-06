@@ -58,10 +58,74 @@ export function PlusIcon({ className }: IconProps) {
   );
 }
 
-export function SpeechIcon({ className }: IconProps) {
+// ここから下は、「どんなかんじが する？」のカードのイラスト。
+// 形は子ども向けのデモ（.claude/design-ref/kids。チームメンバーが ChatGPT で作成）のもの
+
+export function FeelingPainIcon({ className }: IconProps) {
   return (
     <Icon className={className}>
-      <path d="M4 5h16v11H10l-5 4v-4H4z" />
+      <path d="M12 2l-1 7-4-2 2 5-6 1 6 2-2 5 5-3 3 5 1-6 5-2-4-3 2-5-5 2z" />
+    </Icon>
+  );
+}
+
+export function FeelingSickIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 9h.01M16 9h.01M8 16c2-3 6-3 8 0" />
+    </Icon>
+  );
+}
+
+export function FeelingTiredIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M7.5 10h3M13.5 10h3M9 16h6" />
+    </Icon>
+  );
+}
+
+export function FeelingBreathIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M12 4v8M12 9c-2-3-4-4-5-2-1 2-2 6-2 9s3 4 5 2c1-1 2-3 2-6M12 9c2-3 4-4 5-2 1 2 2 6 2 9s-3 4-5 2c-1-1-2-3-2-6" />
+    </Icon>
+  );
+}
+
+export function FeelingCoughIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="10" cy="12" r="8" />
+      <path d="M7 10h.01M13 10h.01M8 16h4M18 10h4M18 14h3" />
+    </Icon>
+  );
+}
+
+export function FeelingFeverIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M10 5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0zM12 9v7" />
+    </Icon>
+  );
+}
+
+export function FeelingOtherIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-1 .4-1 1.2-1 2M12 17h.01" />
+    </Icon>
+  );
+}
+
+// 最初の画面の絵のハート
+export function HeartIcon({ className }: IconProps) {
+  return (
+    <Icon className={className} strokeWidth={2.5}>
+      <path d="M12 20s-7.5-4.6-9.3-9.3A5.2 5.2 0 0 1 12 6.6a5.2 5.2 0 0 1 9.3 4.1C19.5 15.4 12 20 12 20z" />
     </Icon>
   );
 }

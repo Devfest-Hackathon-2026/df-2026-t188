@@ -2,13 +2,14 @@
 
 /*
  * デザインの決まり（色・文字・角の丸み・影）。
- * Material Design 3 の役割の名前を使い、色と形は Kazuma さんの緑のデザイン案
- * （.claude/design-ref/green）に寄せている。
+ * Material Design 3 の役割の名前を使い、色と形は子ども向けのデモ
+ * （.claude/design-ref/kids）に寄せている。
  * 色を差し替えるときは、このファイルだけを直す。
  * 各画面では bg-primary、text-on-surface、text-title、rounded-lg のような名前で使う。
  * 明るい表示だけを対象にしている（ダークモードは未対応）。
  * 文字と背景の組み合わせは、コントラスト 4.5:1 以上にしている
- * （デザイン案の緑 #1CB08A は白い文字との比が足りないので、同じ色味の濃い緑を使う）。
+ * （デモの緑 #1CB08A は白い文字との比が足りないので、同じ色味の濃い緑を使う。
+ * #1CB08A は、文字のない飾り（--color-accent）にだけ使う）。
  */
 @theme {
   /* 主となる緑：ボタン、プログレスバー、選んだカード。container は選んだカードの背景 */
@@ -17,13 +18,14 @@
   --color-primary-container: #e3f6f0;
   --color-on-primary-container: #0b5c47;
   --color-primary-shade: #0b5c47; /* ボタンや選んだカードの、下の厚い縁 */
+  --color-accent: #1cb08a; /* 文字のない飾りだけに使う */
 
   /* 本人（青系）。本人の画面の帯と、「本人」のバッジ */
   --color-patient: #0051a8;
   --color-on-patient: #ffffff;
   --color-patient-container: #ebf3ff;
 
-  /* 家族・介護者（紫系）。家族の画面の帯と、「家族」のバッジ。
+  /* 保護者（紫系）。保護者の画面の帯と、「保護者」のバッジ。
      全体が緑なので緑以外にし、不明の黄土色とも離れた色にしている */
   --color-family: #5b3a93;
   --color-on-family: #ffffff;
@@ -51,8 +53,9 @@
   --color-surface-container-highest: #dfe8e3;
   --color-on-surface: #1c2e2a;
   --color-on-surface-variant: #516a63;
-  --color-outline: #6b8078;
-  --color-outline-variant: #c5d5cd;
+  --color-outline: #6b8078; /* 入力欄の枠 */
+  --color-outline-variant: #c5d5cd; /* カードの下の厚い縁 */
+  --color-card-line: #dfe8e3; /* カードの枠 */
   --color-inverse-surface: #223832;
   --color-inverse-on-surface: #ffffff;
 
@@ -63,26 +66,27 @@
   /* 文字の大きさ（M3 の型より一段大きめ。本文は 18px） */
   --text-headline: 1.75rem;
   --text-headline--line-height: 2.25rem;
-  --text-headline--font-weight: 700;
+  --text-headline--font-weight: 900;
   --text-title: 1.375rem;
   --text-title--line-height: 1.875rem;
-  --text-title--font-weight: 700;
+  --text-title--font-weight: 900;
   --text-body: 1.125rem;
   --text-body--line-height: 1.75rem;
-  --text-body--font-weight: 400;
+  --text-body--font-weight: 500;
   --text-label: 1.125rem;
   --text-label--line-height: 1.5rem;
   --text-label--font-weight: 500;
   --text-support: 1rem;
   --text-support--line-height: 1.5rem;
-  --text-support--font-weight: 400;
+  --text-support--font-weight: 500;
 
-  /* 角の丸み（バッジ 8px、入力欄 12px、ボタンと小さなカード 14px、カード 20px） */
+  /* 角の丸み（バッジ 8px、入力欄 14px、ボタンとカード 20px、最初の画面の絵 26px） */
   --radius-xs: 4px;
   --radius-sm: 8px;
-  --radius-field: 12px;
-  --radius-md: 14px;
+  --radius-field: 14px;
+  --radius-md: 20px;
   --radius-lg: 20px;
+  --radius-art: 26px;
 
   /*
    * 動きのカーブ。デザイン案の動くアプリ（pop）から読み取ったもの。
@@ -93,8 +97,8 @@
 
 @theme inline {
   --font-sans:
-    var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic UI", "Meiryo",
-    sans-serif;
+    var(--font-zen-maru-gothic), "Hiragino Maru Gothic ProN", "Hiragino Sans",
+    "Yu Gothic UI", "Meiryo", sans-serif;
 }
 
 :root {
@@ -285,25 +289,89 @@ body {
   animation: shimmer 1.8s linear infinite;
 }
 
-/* ボタンとカード：押したときに少し沈む（0.06秒） */
+/* ボタンとカード：押したときに沈む（0.06秒） */
 .press-feedback {
-  transition: transform 60ms ease;
+  transition:
+    transform 60ms ease,
+    box-shadow 60ms ease;
 }
 
 .press-feedback:active {
-  transform: translateY(2px);
+  transform: translateY(3px);
 }
 
 /*
- * デザイン案の「下だけ厚い縁」。押すと縁が薄くなる。
+ * デモの「下だけ厚い縁」。押すと、沈んだ分だけ縁が薄くなる。
  * 縁の色は --chunky-edge で変えられる（選んだカードとボタンは濃い緑）
  */
 .chunky {
-  box-shadow: 0 3px 0 var(--chunky-edge, var(--color-outline-variant));
+  box-shadow: 0 4px 0 var(--chunky-edge, var(--color-outline-variant));
 }
 
 .chunky:active {
   box-shadow: 0 1px 0 var(--chunky-edge, var(--color-outline-variant));
+}
+
+/* ひらがなの文は、言葉の途中で折り返さず、空白の位置で折り返す */
+.kana-text {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 押さないカード：2px の枠と、下だけ厚い縁 */
+.card-frame {
+  border: 2px solid var(--color-card-line);
+  border-bottom: 4px solid var(--color-outline-variant);
+}
+
+/* 最初の画面の絵：淡い緑の面に、白い丸を2つ重ねる。文字はのせない飾り */
+.welcome-art {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 152px;
+  border-radius: var(--radius-art);
+  background: linear-gradient(145deg, #e1f7eb, #ccefe1);
+}
+
+.welcome-art::before,
+.welcome-art::after {
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.45);
+  content: "";
+}
+
+.welcome-art::before {
+  top: -35px;
+  right: -32px;
+  width: 125px;
+  height: 125px;
+}
+
+.welcome-art::after {
+  bottom: -28px;
+  left: -24px;
+  width: 86px;
+  height: 86px;
+}
+
+.welcome-art-symbol {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 0 #a7dbc4,
+    0 16px 28px rgb(25 119 84 / 0.12);
+  color: var(--color-accent);
+  transform: rotate(-6deg);
 }
 
 .chunky[aria-pressed="true"] {

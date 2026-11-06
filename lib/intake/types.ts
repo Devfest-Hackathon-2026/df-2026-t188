@@ -1,6 +1,7 @@
 import type {
   BodyPart,
   Course,
+  Feeling,
   FoodIntake,
   Onset,
   Sensation,
@@ -21,6 +22,7 @@ export type Answer<T, R extends Respondent> =
 export type PainLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export type PatientAnswers = {
+  feelings: Answer<Feeling[], "patient">; // どんなかんじが する？
   painLocations: Answer<BodyPart[], "patient">;
   painLevel: Answer<PainLevel, "patient">;
   sensations: Answer<Sensation[], "patient">;
@@ -45,7 +47,9 @@ export type TextOrNone =
   | { kind: "dont_know" }; // わからない
 
 export type FamilyAnswers = {
-  chiefConcern: FamilyAnswer<string>; // 主訴：家族から見て、今いちばん心配な症状
+  age: FamilyAnswer<string>; // 年齢（歳）。入力した文字のまま持つ。Gemini には送らない
+  weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
+  chiefConcern: FamilyAnswer<string>; // 主訴：保護者から見て、今いちばん心配な症状
   onset: FamilyAnswer<Onset>; // いつから
   onsetDetail: FamilyAnswer<string>; // くわしい時刻など
   course: FamilyAnswer<Course>; // 経過
@@ -59,7 +63,7 @@ export type FamilyAnswers = {
 };
 
 export type IntakeState = {
-  step: "ability" | "patient" | "family" | "review" | "doctor";
+  step: "welcome" | "ability" | "patient" | "family" | "review" | "doctor";
   canSelfReport: "able" | "difficult" | null; // null はまだ選んでいない状態
   patient: PatientAnswers;
   family: FamilyAnswers;

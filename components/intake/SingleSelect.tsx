@@ -7,7 +7,7 @@ type SingleSelectProps<T extends string> = {
   onChange: (next: T | null) => void;
 };
 
-// 家族・介護者の画面で使う、1つだけ選ぶチップ。もう一度押すと選択を外す
+// 保護者の画面で使う、1つだけ選ぶチップ。もう一度押すと選択を外す
 export function SingleSelect<T extends string>({
   legend,
   options,

@@ -9,6 +9,7 @@ import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
 import { useStepHistory } from "@/components/intake/useStepHistory";
+import { WelcomeScreen } from "@/components/intake/WelcomeScreen";
 import { BackButton } from "@/components/ui/BackButton";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
 import { TopBar, type TopBarTone } from "@/components/ui/TopBar";
@@ -22,18 +23,23 @@ type Step = IntakeState["step"];
 
 // 画面の順番と、パンくずリストに出す名前（label は画面用の短い名前、fullName は読み上げ用の正式な名前）
 const STEPS: { key: Step; label: string; fullName: string }[] = [
-  { key: "ability", label: "確認", fullName: "説明できるか" },
-  { key: "patient", label: "本人", fullName: "本人" },
-  { key: "family", label: "家族", fullName: "家族・介護者" },
+  { key: "welcome", label: "はじめ", fullName: "はじめの画面" },
+  { key: "ability", label: "確認", fullName: "答えられるかの確認" },
+  { key: "patient", label: "こども", fullName: "こども" },
+  { key: "family", label: "保護者", fullName: "保護者" },
   { key: "review", label: "見直し", fullName: "入力内容の見直し" },
   { key: "doctor", label: "医師", fullName: "医師に見せる" },
 ];
 
-// 上の帯に出す画面名と色。だれが答えている画面かを、色と文字の両方で示す
-const SCREEN_BAND: Record<Step, { title: string; tone: TopBarTone }> = {
+// 上の帯に出す画面名と色。だれが答えている画面かを、色と文字の両方で示す。
+// 最初の画面には、帯もパンくずも「もどる」も出さない
+const SCREEN_BAND: Record<
+  Exclude<Step, "welcome">,
+  { title: string; tone: TopBarTone }
+> = {
   ability: { title: "はじめの確認", tone: "neutral" },
-  patient: { title: "本人が答えています", tone: "patient" },
-  family: { title: "家族・介護者が答えています", tone: "family" },
+  patient: { title: "こどもが こたえる ばん", tone: "patient" },
+  family: { title: "保護者が答えています", tone: "family" },
   review: { title: "入力内容の見直し", tone: "neutral" },
   doctor: { title: "医師に見せる画面", tone: "neutral" },
 };
@@ -41,6 +47,9 @@ const SCREEN_BAND: Record<Step, { title: string; tone: TopBarTone }> = {
 function stepIndex(step: Step): number {
   return STEPS.findIndex((item) => item.key === step);
 }
+
+// 最初の質問の答えを変えたときは、ここまで「通った」扱いに戻す
+const ABILITY_INDEX = stepIndex("ability");
 
 // 回答に加えて、画面の進み具合を持つ（保存はしない）
 type FlowState = IntakeState & {
@@ -51,6 +60,7 @@ type FlowState = IntakeState & {
 
 function createUnansweredPatientAnswers(): PatientAnswers {
   return {
+    feelings: { respondent: "patient", status: "unanswered" },
     painLocations: { respondent: "patient", status: "unanswered" },
     painLevel: { respondent: "patient", status: "unanswered" },
     sensations: { respondent: "patient", status: "unanswered" },
@@ -66,6 +76,7 @@ function createDifficultPatientAnswers(): PatientAnswers {
     reason: "difficult_at_start",
   } as const;
   return {
+    feelings: unable,
     painLocations: unable,
     painLevel: unable,
     sensations: unable,
@@ -76,6 +87,8 @@ function createDifficultPatientAnswers(): PatientAnswers {
 
 function createUnansweredFamilyAnswers(): FamilyAnswers {
   return {
+    age: { respondent: "family", status: "unanswered" },
+    weight: { respondent: "family", status: "unanswered" },
     chiefConcern: { respondent: "family", status: "unanswered" },
     onset: { respondent: "family", status: "unanswered" },
     onsetDetail: { respondent: "family", status: "unanswered" },
@@ -109,10 +122,13 @@ function flowSteps(state: FlowState) {
     : STEPS;
 }
 
-// パンくずに出すのは、今いる画面と、それまでに通った画面だけ
+// パンくずに出すのは、今いる画面と、それまでに通った画面だけ（最初の画面は出さない）
 function breadcrumbItems(state: FlowState): BreadcrumbItem<Step>[] {
   return flowSteps(state)
-    .filter((item) => stepIndex(item.key) <= state.reachedIndex)
+    .filter(
+      (item) =>
+        item.key !== "welcome" && stepIndex(item.key) <= state.reachedIndex,
+    )
     .map((item) => ({ ...item, isCurrent: item.key === state.step }));
 }
 
@@ -131,7 +147,7 @@ const DIRECTION_CLASS = {
 
 export function IntakeFlow() {
   const [state, setState] = useState<FlowState>({
-    step: "ability",
+    step: "welcome",
     canSelfReport: null,
     patient: createUnansweredPatientAnswers(),
     family: createUnansweredFamilyAnswers(),
@@ -178,7 +194,7 @@ export function IntakeFlow() {
   const editingAfterBack = useRef(false);
 
   const stepHistory = useStepHistory<Step>({
-    firstStep: "ability",
+    firstStep: "welcome",
     // ブラウザの「進む」の先が、この流れにない画面や、通っていない画面なら移らない
     canArrive: (step) =>
       flowSteps(state).some((item) => item.key === step) &&
@@ -231,6 +247,7 @@ export function IntakeFlow() {
 
   const { isEditingFromReview } = state;
   const previous = previousStep(state);
+  const band = state.step === "welcome" ? null : SCREEN_BAND[state.step];
 
   return (
     <main
@@ -238,27 +255,32 @@ export function IntakeFlow() {
       className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-x-clip text-body"
     >
       {/* 上の部分（「もどる」と画面名の帯）。スクロールしても上に残る。
-          最初の画面には「もどる」を出さない */}
-      <header className="sticky top-0 z-20 bg-surface-container-lowest shadow-card">
-        {previous && (
-          <div className="flex px-2">
-            <BackButton
-              destination={previous.fullName}
-              onClick={() => goToStep(previous.key)}
-            />
-          </div>
-        )}
-        <TopBar tone={SCREEN_BAND[state.step].tone}>
-          {SCREEN_BAND[state.step].title}
-        </TopBar>
-      </header>
-      <Breadcrumb items={breadcrumbItems(state)} onSelect={goToStep} />
+          最初の画面には、どちらも出さない */}
+      {band && (
+        <>
+          <header className="sticky top-0 z-20 bg-surface-container-lowest shadow-card">
+            {previous && (
+              <div className="flex px-2">
+                <BackButton
+                  destination={previous.fullName}
+                  onClick={() => goToStep(previous.key)}
+                />
+              </div>
+            )}
+            <TopBar tone={band.tone}>{band.title}</TopBar>
+          </header>
+          <Breadcrumb items={breadcrumbItems(state)} onSelect={goToStep} />
+        </>
+      )}
       <div
         key={state.step}
         className={`flex flex-1 flex-col ${
           state.direction ? DIRECTION_CLASS[state.direction] : ""
         }`}
       >
+        {state.step === "welcome" && (
+          <WelcomeScreen onStart={() => goToStep("ability")} />
+        )}
         {state.step === "ability" && (
           <AbilityScreen
             canSelfReport={state.canSelfReport}
@@ -277,7 +299,9 @@ export function IntakeFlow() {
                         : prev.patient,
                     // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
                     reachedIndex:
-                      prev.canSelfReport === "able" ? prev.reachedIndex : 0,
+                      prev.canSelfReport === "able"
+                        ? prev.reachedIndex
+                        : ABILITY_INDEX,
                   },
                   "patient",
                 ),
@@ -291,7 +315,9 @@ export function IntakeFlow() {
                 patient: createDifficultPatientAnswers(),
                 // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
                 reachedIndex:
-                  prev.canSelfReport === "difficult" ? prev.reachedIndex : 0,
+                  prev.canSelfReport === "difficult"
+                    ? prev.reachedIndex
+                    : ABILITY_INDEX,
               }))
             }
             onNext={() => goToStep("family")}
@@ -308,7 +334,7 @@ export function IntakeFlow() {
             }
             onNext={() => goToStep(isEditingFromReview ? "review" : "family")}
             nextLabel={
-              isEditingFromReview ? "見直しに戻る" : "次へ（家族・介護者の入力）"
+              isEditingFromReview ? "見直しに戻る" : "つぎへ（おとなの ひとへ）"
             }
           />
         )}

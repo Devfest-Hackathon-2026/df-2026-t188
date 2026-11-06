@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-// カード。白い面に薄い影。カードの中にカードは入れない（二重の枠を作らない）
+// カード。白い面に、2px の枠と下だけ厚い縁。カードの中にカードは入れない（二重の枠を作らない）
 type Tone =
   | "plain" // ふつうのカード
   | "highlight" // 一番目立たせるカード（AI の要約）
@@ -8,9 +8,9 @@ type Tone =
   | "error"; // 文字数の上限超えのお知らせ
 
 const TONE_CLASS: Record<Tone, string> = {
-  plain: "bg-surface-container-lowest text-on-surface shadow-card",
+  plain: "card-frame bg-surface-container-lowest text-on-surface",
   highlight:
-    "border-2 border-primary bg-surface-container-lowest text-on-surface shadow-card",
+    "border-2 border-b-4 border-primary border-b-primary-shade bg-surface-container-lowest text-on-surface",
   caution: "bg-caution-container text-on-caution-container",
   error: "bg-error-container text-on-error-container",
 };

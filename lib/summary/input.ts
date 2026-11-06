@@ -1,5 +1,6 @@
 // 回答から「Gemini に送るデータ」を作る。ブラウザ側で使う。
-// 未回答・回答困難・「わからない」の項目と、薬・持病・アレルギーは入れない。
+// 未回答・回答困難・「わからない」の項目と、薬・持病・アレルギー・年齢・体重は入れない。
+import { FEELING_NOT_SENT, type Feeling } from "@/lib/intake/options";
 import type {
   Answer,
   FamilyAnswer,
@@ -28,6 +29,12 @@ function withoutDontKnowList<T extends string>(
   return values;
 }
 
+// 「そのほか・わからない」だけを取り除く。ほかに選んだものは送る
+function sendableFeelings(values: Feeling[] | undefined): Feeling[] | undefined {
+  const sendable = values?.filter((value) => value !== FEELING_NOT_SENT);
+  return sendable && sendable.length > 0 ? sendable : undefined;
+}
+
 // undefined の項目を取り除く
 function compact<T extends object>(value: T): T {
   return Object.fromEntries(
@@ -43,6 +50,7 @@ export function buildSummaryInput(
 
   return {
     patient: compact({
+      feelings: sendableFeelings(answeredValue(patient.feelings)),
       chiefComplaint: answeredValue(patient.chiefComplaint),
       painLocations: withoutDontKnowList(answeredValue(patient.painLocations)),
       painLevel: answeredValue(patient.painLevel),
@@ -91,7 +99,7 @@ export function findOverLimitFields(input: SummaryInput): OverLimitField[] {
     },
     {
       respondent: "family",
-      label: "家族から見て、今いちばん心配な症状",
+      label: "保護者から見て、今いちばん心配な症状",
       text: input.family.chiefConcern,
     },
     {

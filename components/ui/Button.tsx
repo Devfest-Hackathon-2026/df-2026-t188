@@ -15,7 +15,7 @@ const VARIANT_CLASS: Record<Variant, string> = {
   tonal:
     "chunky border-2 border-primary bg-primary-container text-on-primary-container font-bold [--chunky-edge:var(--color-primary-shade)]",
   outlined:
-    "chunky border border-outline bg-surface-container-lowest text-on-surface font-bold",
+    "chunky border-2 border-card-line bg-surface-container-lowest text-on-surface font-bold",
   text: "text-primary font-bold",
 };
 

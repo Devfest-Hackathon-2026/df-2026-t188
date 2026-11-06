@@ -4,7 +4,7 @@
 import { ChevronIcon } from "@/components/ui/icons";
 
 type BackButtonProps = {
-  destination: string; // 戻り先の画面の正式な名前（例：「家族・介護者」）
+  destination: string; // 戻り先の画面の正式な名前（例：「保護者」）
   onClick: () => void;
 };
 

@@ -33,13 +33,13 @@ type DoctorScreenProps = {
   onSummaryReady: (cache: SummaryCache) => void;
 };
 
-const RESPONDENT_LABEL = { patient: "本人", family: "家族・介護者" } as const;
+const RESPONDENT_LABEL = { patient: "本人", family: "保護者" } as const;
 
-// 「経過」に並べる項目と、「薬・持病・アレルギー」に並べる項目（どちらも家族の回答を入力どおりに出す）。
+// 「経過」に並べる項目と、「年齢・体重・薬・持病・アレルギー」に並べる項目（どちらも保護者の回答を入力どおりに出す）。
 // 点と線で見せるのは、入力された「いつから」「くわしい時刻」「経過」だけ。時刻を作ったり推測したりしない
 const TIMELINE_KEYS = ["onset", "onsetDetail", "course"];
 const COURSE_OTHER_KEYS = ["foodIntake", "differences"];
-const VERBATIM_KEYS = ["medications", "conditions", "allergies"];
+const VERBATIM_KEYS = ["age", "weight", "medications", "conditions", "allergies"];
 
 function pickRows(rows: AnswerRow[], keys: string[]): AnswerRow[] {
   return keys.flatMap((key) => rows.filter((row) => row.key === key));
@@ -99,7 +99,7 @@ function MetricTile({
     <Card as="div" className="p-3">
       <p className="flex flex-wrap items-center gap-2 text-support">
         {label}
-        <Badge kind={badge}>{badge === "patient" ? "本人" : "家族"}</Badge>
+        <Badge kind={badge}>{badge === "patient" ? "本人" : "保護者"}</Badge>
       </p>
       {value !== null ? (
         <p className="mt-1 text-headline">{value}</p>
@@ -124,6 +124,7 @@ export function DoctorScreen({
   const familyRows = buildFamilyRows(family);
   const patientChief = patientChiefRow(patient);
   const familyChief = familyChiefRow(family);
+  const feelingsRow = pickRows(patientRows, ["feelings"])[0];
   const painLevelRow = pickRows(patientRows, ["painLevel"])[0];
   const temperatureRow = pickRows(familyRows, ["temperature"])[0];
   const consultationRow = pickRows(familyRows, ["consultation"])[0];
@@ -195,9 +196,15 @@ export function DoctorScreen({
                   <MissingLabel row={patientChief} asUnknown />
                 </p>
               )}
+              <p className="mt-3 text-support font-bold text-on-surface-variant">
+                {feelingsRow.label}
+              </p>
+              <p className="mt-1 text-body font-medium">
+                <AnswerValue row={feelingsRow} />
+              </p>
             </div>
             <div className="mt-4 border-t border-outline-variant pt-4">
-              <Badge kind="family">家族</Badge>
+              <Badge kind="family">保護者</Badge>
               <p className="mt-2 text-body">
                 <AnswerValue row={familyChief} asUnknown />
               </p>
@@ -209,7 +216,7 @@ export function DoctorScreen({
           <Card>
             <h2 className="flex flex-wrap items-center gap-2 text-title">
               経過
-              <Badge kind="family">家族</Badge>
+              <Badge kind="family">保護者</Badge>
             </h2>
             <Timeline rows={pickRows(familyRows, TIMELINE_KEYS)} />
             <div className="mt-4 border-t border-outline-variant">
@@ -239,8 +246,8 @@ export function DoctorScreen({
 
           <Card>
             <h2 className="flex flex-wrap items-center gap-2 text-title">
-              薬・持病・アレルギー
-              <Badge kind="family">家族</Badge>
+              年齢・体重・薬・持病・アレルギー
+              <Badge kind="family">保護者</Badge>
             </h2>
             <p className="mt-1 text-support text-on-surface-variant">
               入力されたとおりに表示しています。AIは通していません。
@@ -251,7 +258,7 @@ export function DoctorScreen({
           <Card>
             <h2 className="flex flex-wrap items-center gap-2 text-title">
               今日相談したいこと
-              <Badge kind="family">家族</Badge>
+              <Badge kind="family">保護者</Badge>
             </h2>
             <p className="mt-2 text-body">
               <AnswerValue row={consultationRow} />
@@ -282,14 +289,14 @@ export function DoctorScreen({
                 </h3>
                 {canSelfReport === "difficult" && (
                   <p className="mt-2 text-support text-on-surface-variant">
-                    最初の質問で「本人が説明するのは難しい」が選ばれたため、本人の回答はすべて「回答困難」です。
+                    最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答はすべて「回答困難」です。
                   </p>
                 )}
                 <RowList rows={[patientChief, ...patientRows]} />
 
                 <h3 className="flex flex-wrap items-center gap-2 border-t border-outline-variant pt-4 text-title">
-                  家族・介護者の回答
-                  <Badge kind="family">家族</Badge>
+                  保護者の回答
+                  <Badge kind="family">保護者</Badge>
                 </h3>
                 <RowList rows={[familyChief, ...familyRows]} />
               </div>

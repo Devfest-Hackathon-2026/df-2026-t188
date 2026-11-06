@@ -68,7 +68,7 @@ export function familyChiefRow(family: FamilyAnswers): AnswerRow {
   return {
     key: "chiefConcern",
     respondent: "family",
-    label: "家族から見た症状（今いちばん心配な症状）",
+    label: "保護者から見た症状（今いちばん心配な症状）",
     required: true,
     ...describe(family.chiefConcern, neverDontKnow, asWritten),
   };
@@ -76,6 +76,13 @@ export function familyChiefRow(family: FamilyAnswers): AnswerRow {
 
 export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
   return [
+    {
+      key: "feelings",
+      respondent: "patient",
+      label: "どんなかんじ（本人が選んだもの）",
+      required: false,
+      ...describe(patient.feelings, neverDontKnow, joinList),
+    },
     {
       key: "painLocations",
       respondent: "patient",
@@ -154,6 +161,20 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       label: "普段との違い",
       required: false,
       ...describe(family.differences, neverDontKnow, asWritten),
+    },
+    {
+      key: "age",
+      respondent: "family",
+      label: "年齢",
+      required: false,
+      ...describe(family.age, neverDontKnow, (value) => `${value} 歳`),
+    },
+    {
+      key: "weight",
+      respondent: "family",
+      label: "体重",
+      required: false,
+      ...describe(family.weight, neverDontKnow, (value) => `${value} kg`),
     },
     {
       key: "conditions",

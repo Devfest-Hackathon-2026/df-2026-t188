@@ -50,10 +50,11 @@ function buildItems(
       main: patientChiefRow(patient),
     },
     {
-      title: "主訴（家族から見た症状）",
+      title: "主訴（保護者から見た症状）",
       field: "chiefConcern",
       main: familyChiefRow(family),
     },
+    { title: "どんなかんじ", field: "feelings", main: patientRows.feelings },
     { title: "痛い場所", field: "painLocations", main: patientRows.painLocations },
     { title: "痛みの程度", field: "painLevel", main: patientRows.painLevel },
     {
@@ -72,6 +73,8 @@ function buildItems(
     { title: "体温", field: "temperature", main: familyRows.temperature },
     { title: "食事・水分", field: "foodIntake", main: familyRows.foodIntake },
     { title: "普段との違い", field: "differences", main: familyRows.differences },
+    { title: "年齢", field: "age", main: familyRows.age },
+    { title: "体重", field: "weight", main: familyRows.weight },
     {
       title: "持病・これまでの病気",
       field: "conditions",
@@ -104,7 +107,7 @@ export function ReviewScreen({
         </p>
         {canSelfReport === "difficult" && (
           <p className="text-support text-on-surface-variant">
-            最初の質問で「本人が説明するのは難しい」が選ばれたため、本人の回答は「回答困難」です。本人の項目の「編集」は、最初の質問に移ります。
+            最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。本人の項目の「編集」は、最初の質問に移ります。
           </p>
         )}
 
@@ -115,7 +118,7 @@ export function ReviewScreen({
             return (
               <li
                 key={item.field}
-                className="flex items-center gap-3 rounded-lg bg-surface-container-lowest p-4 shadow-card"
+                className="card-frame flex items-center gap-3 rounded-lg bg-surface-container-lowest p-4"
               >
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2">
@@ -137,7 +140,7 @@ export function ReviewScreen({
                   type="button"
                   aria-label={`${item.title}を編集`}
                   onClick={() => onEdit(item.main.respondent, item.field)}
-                  className="press-feedback chunky inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md border border-outline bg-surface-container-lowest px-3 text-support font-bold text-on-surface focus-visible:outline-2 focus-visible:outline-on-surface"
+                  className="press-feedback chunky inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md border-2 border-card-line bg-surface-container-lowest px-3 text-support font-bold text-on-surface focus-visible:outline-2 focus-visible:outline-on-surface"
                 >
                   <PencilIcon className="h-4 w-4" />
                   編集
