@@ -8,6 +8,7 @@ import { fieldId } from "@/components/intake/FieldCard";
 import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
+import { useStepHistory } from "@/components/intake/useStepHistory";
 import { BackButton } from "@/components/ui/BackButton";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
 import { TopBar, type TopBarTone } from "@/components/ui/TopBar";
@@ -173,9 +174,45 @@ export function IntakeFlow() {
       (answer) => answer.status !== "unanswered",
     );
 
-  // ふつうの画面の切り替え（「次へ」「もどる」とパンくず）。「編集」の最中という印は消す
-  const goToStep = (step: Step) =>
+  // 履歴が戻ったあとに「編集」の最中にするか。見直しの「編集」のときだけ true にする
+  const editingAfterBack = useRef(false);
+
+  const stepHistory = useStepHistory<Step>({
+    firstStep: "ability",
+    // ブラウザの「進む」の先が、この流れにない画面や、通っていない画面なら移らない
+    canArrive: (step) =>
+      flowSteps(state).some((item) => item.key === step) &&
+      stepIndex(step) <= state.reachedIndex,
+    // 履歴を通って画面を移ったとき。ブラウザの「戻る」「進む」も、「もどる」も、ここを通る
+    onArrive: (step) => {
+      const isEditing = editingAfterBack.current;
+      editingAfterBack.current = false;
+      setState((prev) =>
+        moveTo({ ...prev, isEditingFromReview: isEditing }, step),
+      );
+    },
+    // 回答が入るのは、最初の質問に答えたあとだけ
+    hasInput: state.canSelfReport !== null,
+  });
+
+  // 今の画面から何画面ぶん動くか（この流れで通る画面の順番で数える）
+  const stepsTo = (step: Step) => {
+    const keys = flowSteps(state).map((item) => item.key);
+    return { keys, from: keys.indexOf(state.step), to: keys.indexOf(step) };
+  };
+
+  // ふつうの画面の切り替え（「次へ」「もどる」とパンくず）。「編集」の最中という印は消す。
+  // 先へ進むときは履歴に積み、前へ戻るときは履歴を戻す（履歴が戻った結果として画面が変わる）
+  const goToStep = (step: Step) => {
+    const { keys, from, to } = stepsTo(step);
+    if (to < from) {
+      editingAfterBack.current = false;
+      stepHistory.goBack(from - to);
+      return;
+    }
+    stepHistory.pushSteps(keys.slice(from + 1, to + 1));
     setState((prev) => moveTo({ ...prev, isEditingFromReview: false }, step));
+  };
 
   // 見直し画面の「編集」。その項目を入力した画面の、その位置に移る。
   // 「難しい」の流れでは本人の画面がないので、本人の項目は最初の質問に移る
@@ -187,7 +224,9 @@ export function IntakeFlow() {
           ? "patient"
           : "ability";
     fieldToShow.current = target === "ability" ? null : field;
-    setState((prev) => moveTo({ ...prev, isEditingFromReview: true }, target));
+    editingAfterBack.current = true;
+    const { from, to } = stepsTo(target);
+    stepHistory.goBack(from - to);
   };
 
   const { isEditingFromReview } = state;
@@ -224,7 +263,8 @@ export function IntakeFlow() {
           <AbilityScreen
             canSelfReport={state.canSelfReport}
             hasPatientInput={hasPatientInput}
-            onChooseAble={() =>
+            onChooseAble={() => {
+              stepHistory.pushSteps(["patient"]);
               setState((prev) =>
                 moveTo(
                   {
@@ -241,8 +281,8 @@ export function IntakeFlow() {
                   },
                   "patient",
                 ),
-              )
-            }
+              );
+            }}
             onChooseDifficult={() =>
               setState((prev) => ({
                 ...prev,
