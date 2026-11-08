@@ -15,10 +15,12 @@ import {
   buildFamilyRows,
   buildPatientRows,
 } from "@/lib/intake/unknowns";
+import type { PatientSymptoms } from "@/lib/intake/symptoms";
 
 type ReviewScreenProps = {
   canSelfReport: IntakeState["canSelfReport"];
   patient: PatientAnswers;
+  symptoms: PatientSymptoms; // こどもの主症状と詳しい答え（言葉で出すだけ。Gemini には送らない）
   family: FamilyAnswers;
   onEdit: (target: EditTarget) => void;
   // こどもの最初の画面（「難しい」のときは最初の質問）に戻る。入力した内容は消さない
@@ -51,24 +53,31 @@ const ITEM_TITLES: Record<string, string> = {
   weight: "体重",
 };
 
+// 表にない項目（主症状ごとの詳しい答えなど）は、行の名前から「（本人が選んだもの）」を外して使う
+function itemTitle(row: AnswerRow): string {
+  return ITEM_TITLES[row.key] ?? row.label.replace("（本人が選んだもの）", "");
+}
+
 function buildItems(
   patient: PatientAnswers,
+  symptoms: PatientSymptoms,
   family: FamilyAnswers,
 ): ReviewItem[] {
-  return [...buildPatientRows(patient), ...buildFamilyRows(family)].map(
-    (row) => ({ title: ITEM_TITLES[row.key], field: row.key, main: row }),
+  return [...buildPatientRows(patient, symptoms), ...buildFamilyRows(family)].map(
+    (row) => ({ title: itemTitle(row), field: row.key, main: row }),
   );
 }
 
 export function ReviewScreen({
   canSelfReport,
   patient,
+  symptoms,
   family,
   onEdit,
   onRedoPatient,
   onNext,
 }: ReviewScreenProps) {
-  const items = buildItems(patient, family);
+  const items = buildItems(patient, symptoms, family);
 
   return (
     <>

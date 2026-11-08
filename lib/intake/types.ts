@@ -6,6 +6,7 @@ import type {
   Onset,
   Sex,
 } from "./options";
+import type { PatientSymptoms } from "./symptoms";
 
 // respondent は「誰の欄の回答か」を表す。本人と保護者の回答を型で混ぜないようにする
 export type Respondent = "patient" | "family";
@@ -55,11 +56,25 @@ export type FamilyAnswers = {
   weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
 };
 
+// 詳細の画面の枠。詳細の画面は、選んだ主症状の数（最大5つ）と「そのほか」の1つで、最大6つ。
+// 何番目の画面に、どの主症状を出すかは lib/intake/symptoms.ts の symptomPhases で決める
+export const PATIENT_DETAIL_STEPS = [
+  "patientDetail1",
+  "patientDetail2",
+  "patientDetail3",
+  "patientDetail4",
+  "patientDetail5",
+  "patientDetail6",
+] as const;
+
+export type PatientDetailStep = (typeof PATIENT_DETAIL_STEPS)[number];
+
 export type IntakeState = {
   step:
     | "welcome"
     | "ability"
-    | "patientFeeling"
+    | "patientFeeling" // 症状をえらぶ
+    | PatientDetailStep // 症状をくわしく（選んだ主症状ごとの画面と、最後の「そのほか」）
     | "patientBody"
     | "patientDiscomfort"
     | "patientBreak" // こどもの区切り（おつかれさま）
@@ -70,5 +85,7 @@ export type IntakeState = {
     | "end";
   canSelfReport: "able" | "difficult" | null; // null はまだ選んでいない状態
   patient: PatientAnswers;
+  // こどもが選んだ主症状と詳しい答え。Gemini には送らない（送る主症状は patient.feelings に入れる）
+  symptoms: PatientSymptoms;
   family: FamilyAnswers;
 };

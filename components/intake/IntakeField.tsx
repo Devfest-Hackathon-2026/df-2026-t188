@@ -13,15 +13,12 @@ import { BodyFigure } from "@/components/ui/icons";
 import {
   BODY_PART_DISPLAY,
   BODY_PARTS,
-  FEELING_DISPLAY,
-  FEELINGS,
   FOOD_INTAKE_OPTIONS,
   ONSET_OPTIONS,
   SEX_OPTIONS,
   type BodyPart,
   type ChoiceDisplay,
   type ChoicePicture,
-  type Feeling,
 } from "@/lib/intake/options";
 import type {
   Answer,
@@ -31,7 +28,8 @@ import type {
   Presence,
 } from "@/lib/intake/types";
 
-export type PatientFieldKey = keyof PatientAnswers;
+// 「どんな かんじ」は、症状をえらぶ画面（SymptomScreens.tsx）で聞くので、ここには入れない
+export type PatientFieldKey = Exclude<keyof PatientAnswers, "feelings">;
 export type FamilyFieldKey = keyof FamilyAnswers;
 
 // ---------- こどもの項目 ----------
@@ -60,10 +58,6 @@ function toPictureOption<T extends string>(
   };
 }
 
-const FEELING_OPTIONS: PictureOption<Feeling>[] = FEELINGS.map((value) =>
-  toPictureOption(value, FEELING_DISPLAY[value]),
-);
-
 const BODY_PART_OPTIONS: PictureOption<BodyPart>[] = BODY_PARTS.map((value) =>
   toPictureOption(value, BODY_PART_DISPLAY[value]),
 );
@@ -73,7 +67,7 @@ function selectedValues<T>(answer: Answer<T[], "patient">): T[] {
 }
 
 // 選択が0件なら未回答に戻す
-function toSelectionAnswer<T>(values: T[]): Answer<T[], "patient"> {
+export function toSelectionAnswer<T>(values: T[]): Answer<T[], "patient"> {
   return values.length > 0
     ? { respondent: "patient", status: "answered", value: values }
     : { respondent: "patient", status: "unanswered" };
@@ -96,17 +90,16 @@ export function PatientField({
         labelledBy={labelledBy}
         options={BODY_PART_OPTIONS}
         selected={selectedValues(answers.bodyParts)}
-        onChange={(next) => onChange({ bodyParts: toSelectionAnswer(next) })}
-      />
-    );
-  }
-  if (field === "feelings") {
-    return (
-      <PictureSelect
-        labelledBy={labelledBy}
-        options={FEELING_OPTIONS}
-        selected={selectedValues(answers.feelings)}
-        onChange={(next) => onChange({ feelings: toSelectionAnswer(next) })}
+        onToggle={(value) => {
+          const selected = selectedValues(answers.bodyParts);
+          onChange({
+            bodyParts: toSelectionAnswer(
+              selected.includes(value)
+                ? selected.filter((item) => item !== value)
+                : [...selected, value],
+            ),
+          });
+        }}
       />
     );
   }

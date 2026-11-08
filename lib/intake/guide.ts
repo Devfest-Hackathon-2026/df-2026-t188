@@ -1,12 +1,12 @@
 // 案内ボックスのキャラクターの表情と、決まった文。AI は使わない。
 // 選んだ内容を受けて決まった文を返すだけで、症状を判断したり、診断したりしない
+import { detailNumber, type Step } from "./flow";
+import { BODY_PART_DISPLAY, DISCOMFORT_LABELS } from "./options";
 import {
-  BODY_PART_DISPLAY,
-  DISCOMFORT_LABELS,
-  FEELING_DISPLAY,
-  FEELING_NOT_SENT,
-} from "./options";
-import type { Step } from "./flow";
+  SYMPTOM_CATEGORIES,
+  symptomPhases,
+  type PatientSymptoms,
+} from "./symptoms";
 import type { FamilyAnswers, PatientAnswers } from "./types";
 
 // 表情（public/mascot/guide の画像の名前）
@@ -23,6 +23,17 @@ export type Guide = {
   title: string; // 画面の見出し（その画面の質問）
   description: string;
   reaction: string; // 選んだ内容への短い返事。なければ空
+};
+
+// 詳細の画面で、最後に押したもの。HTML では、押したボタンで返事を変える
+// （「わからない」なら think と「わからなくても だいじょうぶだよ。」、ほかは listen と「えらびなおすことも できるよ。」）
+export type DetailReaction = "pick" | "dontKnow" | null;
+
+export type GuideContext = {
+  patient: PatientAnswers;
+  family: FamilyAnswers;
+  symptoms: PatientSymptoms;
+  detailReaction: DetailReaction;
 };
 
 // 保護者の画面ごとに、答えたかを見る項目
@@ -51,33 +62,72 @@ const FAMILY_TEXT: Partial<Record<Step, { title: string; description: string }>>
   },
 };
 
-const DONT_KNOW_REACTION = "わからなくても だいじょうぶだよ";
+// ここから下の「症状をえらぶ」「症状をくわしく」の文は、
+// かずまさんの v3 の症状画面.html（updateMascotForStep と、ボタンを押したときの setGuide）のとおり
+function chooseSymptomsGuide(symptoms: PatientSymptoms): Guide {
+  const title = "どんなかんじがする？";
+  const description = "あてはまるものを えらんでね。いくつでも えらべるよ。";
+  const picked = symptoms.categories;
+  if (picked.length === 0) return { pose: "hello", title, description, reaction: "" };
+  if (picked.includes("unknown")) {
+    return { pose: "think", title, description, reaction: "わからなくても だいじょうぶだよ。" };
+  }
+  return {
+    pose: "listen",
+    title,
+    description,
+    reaction:
+      picked.length === 1
+        ? `「${SYMPTOM_CATEGORIES[picked[0]].label}」を えらんだね。`
+        : "いくつでも えらべるよ。",
+  };
+}
+
+// 詳細の画面の説明（HTML の画面2の headline-desc）
+export const SYMPTOM_DETAIL_DESCRIPTION =
+  "わかるところだけで大丈夫。あてはまるものをえらんでね。";
+
+function symptomDetailGuide(
+  number: number,
+  symptoms: PatientSymptoms,
+  reaction: DetailReaction,
+): Guide {
+  const phase = symptomPhases(symptoms)[number - 1] ?? "other";
+  const isLast = phase === "other";
+  const title = isLast
+    ? "ほかにも きになることは ある？"
+    : `「${SYMPTOM_CATEGORIES[phase].label}」について`;
+  const description = SYMPTOM_DETAIL_DESCRIPTION;
+  if (reaction === "dontKnow") {
+    return { pose: "think", title, description, reaction: "わからなくても だいじょうぶだよ。" };
+  }
+  if (reaction === "pick") {
+    return { pose: "listen", title, description, reaction: "えらびなおすことも できるよ。" };
+  }
+  return isLast
+    ? { pose: "think", title, description, reaction: "ほかにも あれば おしえてね。" }
+    : { pose: "listen", title, description, reaction: "わかるところだけで だいじょうぶ。" };
+}
 
 // 選んだ順に並んでいるので、最後が一番新しく選んだもの
-function lastSelected<T>(answer: PatientAnswers["feelings" | "bodyParts"]): T | null {
+function lastSelected<T>(answer: PatientAnswers["bodyParts"]): T | null {
   return answer.status === "answered" && answer.value.length > 0
     ? (answer.value[answer.value.length - 1] as T)
     : null;
 }
 
-function selectionGuide(
-  title: string,
-  label: string | null,
-  isDontKnow: boolean,
-): Guide {
+function selectionGuide(title: string, label: string | null): Guide {
   const description = "あてはまるものを えらんでね。いくつでも えらべるよ。";
   if (label === null) return { pose: "hello", title, description, reaction: "" };
-  if (isDontKnow) {
-    return { pose: "think", title, description, reaction: DONT_KNOW_REACTION };
-  }
   return { pose: "listen", title, description, reaction: `「${label}」を えらんだね` };
 }
 
 export function guideFor(
   step: Step,
-  patient: PatientAnswers,
-  family: FamilyAnswers,
+  { patient, family, symptoms, detailReaction }: GuideContext,
 ): Guide | null {
+  const number = detailNumber(step);
+  if (number > 0) return symptomDetailGuide(number, symptoms, detailReaction);
   switch (step) {
     case "ability":
       return {
@@ -86,17 +136,11 @@ export function guideFor(
         description: "保護者の方がお選びください。",
         reaction: "",
       };
-    case "patientFeeling": {
-      const last = lastSelected<keyof typeof FEELING_DISPLAY>(patient.feelings);
-      return selectionGuide(
-        "どんな かんじ？",
-        last && FEELING_DISPLAY[last].label,
-        last === FEELING_NOT_SENT,
-      );
-    }
+    case "patientFeeling":
+      return chooseSymptomsGuide(symptoms);
     case "patientBody": {
       const last = lastSelected<keyof typeof BODY_PART_DISPLAY>(patient.bodyParts);
-      return selectionGuide("どこが へん？", last && BODY_PART_DISPLAY[last].label, false);
+      return selectionGuide("どこが へん？", last && BODY_PART_DISPLAY[last].label);
     }
     case "patientDiscomfort": {
       const title = "どれくらい つらい？";

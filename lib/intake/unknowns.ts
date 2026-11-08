@@ -1,6 +1,12 @@
 // 「不明」の判定と、医師に見せる画面の行づくり。すべてルールで行い、AIは使わない。
 // 回答の内容を解釈したり、ある回答から別の回答を推測したりしない。
 import { discomfortText } from "./options";
+import {
+  DETAIL_PHASE_ORDER,
+  EMPTY_SYMPTOMS,
+  SYMPTOM_CATEGORIES,
+  type PatientSymptoms,
+} from "./symptoms";
 import type {
   Answer,
   FamilyAnswer,
@@ -56,15 +62,75 @@ const formatPresence = (value: Presence) => {
 const formatTemperature = (value: Temperature) =>
   value.kind === "measured" ? `${value.celsius} ℃` : "測っていない";
 
-export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
-  return [
-    {
-      key: "feelings",
-      respondent: "patient",
-      label: "どんなかんじ（本人が選んだもの）",
+// 主症状。こどもが選んだものを、画面の言葉のまま全部出す（かぜっぽい、そのほか、わからない も）。
+// 選んだ記録がない（テストなど）ときは、送る値（patient.feelings）で出す
+function feelingsRow(patient: PatientAnswers, symptoms: PatientSymptoms): AnswerRow {
+  const base = {
+    key: "feelings",
+    respondent: "patient" as const,
+    label: "どんなかんじ（本人が選んだもの）",
+    required: false,
+  };
+  if (patient.feelings.status === "unable" || symptoms.categories.length === 0) {
+    return { ...base, ...describe(patient.feelings, neverDontKnow, joinList) };
+  }
+  return {
+    ...base,
+    state: "answered",
+    text: joinList(symptoms.categories.map((key) => SYMPTOM_CATEGORIES[key].label)),
+  };
+}
+
+// 詳しい答えと、ほかに きになること。Gemini には送らず、見直しと医師の画面に言葉で出すだけ。
+// 答えがある項目だけ行にする
+function symptomDetailRows(symptoms: PatientSymptoms): AnswerRow[] {
+  const rows: AnswerRow[] = DETAIL_PHASE_ORDER.flatMap((key) => {
+    const values = symptoms.details[key] ?? [];
+    if (!symptoms.categories.includes(key) || values.length === 0) return [];
+    const isDontKnow = values.every((value) => value === DONT_KNOW);
+    return [
+      {
+        key: `detail-${key}`,
+        respondent: "patient",
+        label: `「${SYMPTOM_CATEGORIES[key].label}」について（本人が選んだもの）`,
+        required: false,
+        state: isDontKnow ? "dont_know" : "answered",
+        text: isDontKnow ? "" : joinList(values),
+      },
+    ];
+  });
+  if (symptoms.otherGate !== null) {
+    const base = {
+      key: "otherSymptoms",
+      respondent: "patient" as const,
+      label: "ほかに きになること（本人が選んだもの）",
       required: false,
-      ...describe(patient.feelings, neverDontKnow, joinList),
-    },
+    };
+    if (symptoms.otherGate === "わからない") {
+      rows.push({ ...base, state: "dont_know", text: "" });
+    } else if (symptoms.otherGate === "ない") {
+      rows.push({ ...base, state: "answered", text: "ない（と回答）" });
+    } else {
+      rows.push({
+        ...base,
+        state: "answered",
+        text:
+          symptoms.other.length > 0
+            ? joinList(symptoms.other)
+            : "ある（どれかは えらんでいない）",
+      });
+    }
+  }
+  return rows;
+}
+
+export function buildPatientRows(
+  patient: PatientAnswers,
+  symptoms: PatientSymptoms = EMPTY_SYMPTOMS,
+): AnswerRow[] {
+  return [
+    feelingsRow(patient, symptoms),
+    ...symptomDetailRows(symptoms),
     {
       key: "bodyParts",
       respondent: "patient",

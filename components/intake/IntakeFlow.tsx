@@ -7,8 +7,15 @@ import { DoctorScreen } from "@/components/intake/DoctorScreen";
 import { EditSheet, type EditTarget } from "@/components/intake/EditSheet";
 import { EndScreen } from "@/components/intake/EndScreen";
 import { FamilyScreen, type FamilyPage } from "@/components/intake/FamilyScreen";
-import type { PatientFieldKey } from "@/components/intake/IntakeField";
+import {
+  toSelectionAnswer,
+  type PatientFieldKey,
+} from "@/components/intake/IntakeField";
 import { MascotGuide } from "@/components/intake/MascotGuide";
+import {
+  ChooseSymptomsScreen,
+  SymptomDetailScreen,
+} from "@/components/intake/SymptomScreens";
 import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
 import { SplashScreen } from "@/components/intake/SplashScreen";
@@ -18,6 +25,7 @@ import { WelcomeScreen } from "@/components/intake/WelcomeScreen";
 import { BackButton } from "@/components/ui/BackButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import {
+  detailNumber,
   flowSteps,
   progressOf,
   stepIndex,
@@ -25,7 +33,13 @@ import {
   type Step,
   type StepGroup,
 } from "@/lib/intake/flow";
-import { guideFor } from "@/lib/intake/guide";
+import { guideFor, type DetailReaction } from "@/lib/intake/guide";
+import {
+  categoryFeelings,
+  EMPTY_SYMPTOMS,
+  symptomPhases,
+  type PatientSymptoms,
+} from "@/lib/intake/symptoms";
 import type {
   FamilyAnswers,
   IntakeState,
@@ -43,7 +57,6 @@ const AUDIENCE: Partial<Record<StepGroup, string>> = {
 
 // こどもの画面と保護者の画面の、どの問いを出すか
 const PATIENT_FIELDS: Partial<Record<Step, PatientFieldKey>> = {
-  patientFeeling: "feelings",
   patientBody: "bodyParts",
   patientDiscomfort: "discomfort",
 };
@@ -58,12 +71,24 @@ const FULL_SCREEN_STEPS: readonly Step[] = ["welcome", "patientBreak", "end"];
 
 // 最初の質問の答えを変えたときは、ここまで「通った」扱いに戻す
 const ABILITY_INDEX = stepIndex("ability");
+// 主症状の選び方を変えたときは、詳細の画面の数が変わるので、ここまで「通った」扱いに戻す
+const CHOOSE_SYMPTOMS_INDEX = stepIndex("patientFeeling");
 
 // 回答に加えて、画面の進み具合を持つ（保存はしない）
 type FlowState = IntakeState & {
   reachedIndex: number; // どの画面まで通ったか（STEPS の番号）
   direction: "forward" | "back" | null; // 直前の切り替えの向き。動きの向きに使う
+  detailReaction: DetailReaction; // 詳細の画面で最後に押したもの（キャラクターの返事に使う）
 };
+
+// 詳細の画面の数（選んだ主症状の画面と「そのほか」）
+function detailCount(state: FlowState): number {
+  return symptomPhases(state.symptoms).length;
+}
+
+function stepsOf(state: FlowState) {
+  return flowSteps(state.canSelfReport, detailCount(state));
+}
 
 function createUnansweredPatientAnswers(): PatientAnswers {
   return {
@@ -111,12 +136,13 @@ function moveTo(state: FlowState, step: Step): FlowState {
     step,
     direction: to === from ? state.direction : to > from ? "forward" : "back",
     reachedIndex: Math.max(state.reachedIndex, to),
+    detailReaction: to === from ? state.detailReaction : null,
   };
 }
 
 // 「次へ」で進む先。この流れで通る画面の順番で、1つ先の画面
 function nextStep(state: FlowState): Step {
-  const steps = flowSteps(state.canSelfReport);
+  const steps = stepsOf(state);
   const index = steps.findIndex((item) => item.key === state.step);
   return steps[Math.min(index + 1, steps.length - 1)].key;
 }
@@ -124,7 +150,7 @@ function nextStep(state: FlowState): Step {
 // 「もどる」で戻る先。この流れで通る画面の順番で、1つ前の画面。
 // 本人の画面を飛ばす流れでは、飛ばした画面には戻らない。最初の画面では null
 function previousStep(state: FlowState) {
-  const steps = flowSteps(state.canSelfReport);
+  const steps = stepsOf(state);
   const index = steps.findIndex((item) => item.key === state.step);
   return index > 0 ? steps[index - 1] : null;
 }
@@ -139,9 +165,11 @@ function createInitialState(): FlowState {
     step: "welcome",
     canSelfReport: null,
     patient: createUnansweredPatientAnswers(),
+    symptoms: EMPTY_SYMPTOMS,
     family: createUnansweredFamilyAnswers(),
     reachedIndex: 0,
     direction: null,
+    detailReaction: null,
   };
 }
 
@@ -171,9 +199,11 @@ export function IntakeFlow() {
 
   const hasPatientInput =
     state.canSelfReport === "able" &&
-    Object.values(state.patient).some(
+    (Object.values(state.patient).some(
       (answer) => answer.status !== "unanswered",
-    );
+    ) ||
+      state.symptoms.categories.length > 0 ||
+      state.symptoms.otherGate !== null);
 
   // 見直しのシート。開くと履歴を1つ積み、閉じるときは履歴を戻す。
   // 「なおす」「やめる」「Esc」「ブラウザの戻る」は、どれも履歴が戻った結果として閉じる
@@ -197,7 +227,7 @@ export function IntakeFlow() {
     firstStep: "welcome",
     // ブラウザの「進む」の先が、この流れにない画面や、通っていない画面なら移らない
     canArrive: (step) =>
-      flowSteps(state.canSelfReport).some((item) => item.key === step) &&
+      stepsOf(state).some((item) => item.key === step) &&
       stepIndex(step) <= state.reachedIndex,
     // 履歴を通って画面を移ったとき。ブラウザの「戻る」「進む」も、「もどる」も、ここを通る
     onArrive: (step) => {
@@ -218,7 +248,7 @@ export function IntakeFlow() {
 
   // 今の画面から何画面ぶん動くか（この流れで通る画面の順番で数える）
   const stepsTo = (step: Step) => {
-    const keys = flowSteps(state.canSelfReport).map((item) => item.key);
+    const keys = stepsOf(state).map((item) => item.key);
     return { keys, from: keys.indexOf(state.step), to: keys.indexOf(step) };
   };
 
@@ -252,12 +282,36 @@ export function IntakeFlow() {
   const previous = previousStep(state);
   const group = stepInfo(state.step).group;
   const audience = AUDIENCE[group];
-  const progress = progressOf(state.step, state.canSelfReport);
-  const guide = guideFor(state.step, state.patient, state.family);
+  const progress = progressOf(state.step, state.canSelfReport, detailCount(state));
+  const guide = guideFor(state.step, {
+    patient: state.patient,
+    family: state.family,
+    symptoms: state.symptoms,
+    detailReaction: state.detailReaction,
+  });
+  const detail = detailNumber(state.step);
+  const phases = symptomPhases(state.symptoms);
   const hasHeader = !FULL_SCREEN_STEPS.includes(state.step);
   const patientField = PATIENT_FIELDS[state.step];
   const familyPage = FAMILY_PAGES[state.step];
   const goNext = () => goToStep(nextStep(state));
+
+  // 主症状と詳しい答えを変える。
+  // Gemini に送る主症状（patient.feelings）は、ここで今のサーバーの選択肢に置きかえて入れる。
+  // 主症状の選び方が変わったら、詳細の画面の数が変わるので、先の画面は「まだ通っていない」扱いに戻す
+  const setSymptoms = (symptoms: PatientSymptoms) =>
+    setState((prev) => ({
+      ...prev,
+      symptoms,
+      patient: {
+        ...prev.patient,
+        feelings: toSelectionAnswer(categoryFeelings(symptoms.categories)),
+      },
+      reachedIndex:
+        symptoms.categories.join() === prev.symptoms.categories.join()
+          ? prev.reachedIndex
+          : Math.min(prev.reachedIndex, CHOOSE_SYMPTOMS_INDEX),
+    }));
 
   return (
     <>
@@ -305,7 +359,13 @@ export function IntakeFlow() {
               </div>
               <div aria-hidden="true" className="w-24 shrink-0" />
             </div>
-            {progress && <ProgressBar total={progress.total} current={progress.current} />}
+            {progress && (
+              <ProgressBar
+                total={progress.total}
+                current={progress.current}
+                inSegment={progress.inSegment}
+              />
+            )}
           </header>
         )}
         <div
@@ -337,6 +397,10 @@ export function IntakeFlow() {
                         prev.canSelfReport === "difficult"
                           ? createUnansweredPatientAnswers()
                           : prev.patient,
+                      symptoms:
+                        prev.canSelfReport === "difficult"
+                          ? EMPTY_SYMPTOMS
+                          : prev.symptoms,
                       // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
                       reachedIndex:
                         prev.canSelfReport === "able"
@@ -352,12 +416,33 @@ export function IntakeFlow() {
                   ...prev,
                   canSelfReport: "difficult",
                   patient: createDifficultPatientAnswers(),
+                  symptoms: EMPTY_SYMPTOMS,
                   // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
                   reachedIndex:
                     prev.canSelfReport === "difficult"
                       ? prev.reachedIndex
                       : ABILITY_INDEX,
                 }))
+              }
+              onNext={goNext}
+            />
+          )}
+          {state.step === "patientFeeling" && (
+            <ChooseSymptomsScreen
+              symptoms={state.symptoms}
+              onChange={(symptoms) => setSymptoms(symptoms)}
+              onNext={goNext}
+            />
+          )}
+          {detail > 0 && phases[detail - 1] && (
+            <SymptomDetailScreen
+              phase={phases[detail - 1]}
+              number={detail}
+              count={phases.length}
+              symptoms={state.symptoms}
+              onChange={(symptoms) => setSymptoms(symptoms)}
+              onReaction={(detailReaction) =>
+                setState((prev) => ({ ...prev, detailReaction }))
               }
               onNext={goNext}
             />
@@ -400,6 +485,7 @@ export function IntakeFlow() {
             <ReviewScreen
               canSelfReport={state.canSelfReport}
               patient={state.patient}
+              symptoms={state.symptoms}
               family={state.family}
               onEdit={openSheet}
               onRedoPatient={() =>
@@ -414,6 +500,7 @@ export function IntakeFlow() {
             <DoctorScreen
               canSelfReport={state.canSelfReport}
               patient={state.patient}
+              symptoms={state.symptoms}
               family={state.family}
               summaryCache={summaryCache}
               onSummaryReady={setSummaryCache}

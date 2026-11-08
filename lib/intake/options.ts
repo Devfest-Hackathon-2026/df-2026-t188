@@ -94,19 +94,7 @@ export type ChoiceDisplay = {
   color?: string;
 };
 
-// 「どんな かんじ？」。参照の「かぜっぽい」は、今のサーバーに合わせて「ねつっぽい」にしている
-export const FEELING_DISPLAY: Record<Feeling, ChoiceDisplay> = {
-  いたい: { label: "いたい", picture: { emoji: "🤕" } },
-  きもちわるい: { label: "きもちわるい", picture: { emoji: "🤢" } },
-  だるい: { label: "だるい", picture: { emoji: "😩" } },
-  "いきが くるしい": { label: "いきが くるしい", picture: { emoji: "😮‍💨" } },
-  "せきが でる": { label: "せきが でる", picture: { emoji: "😷" } },
-  ねつっぽい: { label: "ねつっぽい", picture: { emoji: "🤒" } },
-  "そのほか・わからない": {
-    label: "そのほか・わからない",
-    picture: { emoji: "❓" },
-  },
-};
+// 「どんな かんじ？」の画面の言葉と絵は、lib/intake/symptoms.ts（かずまさんの v3 の症状画面.html のとおり）にある
 
 // 「どこが へん？」。絵文字は参照の現行画面.html（bodyPartEmoji）と同じもの。
 // 参照では「むね」と「おなか」がどちらも 🧍 なので、見分けは言葉でつける。

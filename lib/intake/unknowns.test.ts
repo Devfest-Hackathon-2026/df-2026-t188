@@ -8,6 +8,7 @@ import {
   getUnknownRows,
   safetyNotice,
 } from "@/lib/intake/unknowns";
+import { EMPTY_SYMPTOMS } from "@/lib/intake/symptoms";
 
 const answeredPatient = <T>(value: T) =>
   ({ respondent: "patient", status: "answered", value }) as const;
@@ -197,5 +198,50 @@ describe("見直しと医師の画面の行", () => {
     const height = rows.find((row) => row.key === "height");
     assert.deepEqual([sex?.text, sex?.required], ["女の子", false]);
     assert.deepEqual([height?.text, height?.required], ["125 cm", false]);
+  });
+});
+
+describe("こどもの主症状と詳しい答えの行（Gemini には送らず、言葉で出すだけ）", () => {
+  test("主症状は、送らないもの（かぜっぽい、そのほか、わからない）も画面の言葉で出す", () => {
+    const rows = buildPatientRows(patient, {
+      ...EMPTY_SYMPTOMS,
+      categories: ["fever", "pain", "other"],
+    });
+    assert.equal(rows[0].text, "かぜっぽい、いたい、そのほか");
+  });
+
+  test("詳しい答えは、主症状の画面の順に「『〇〇』について」の行で出す。答えがない主症状は行にしない", () => {
+    const rows = buildPatientRows(patient, {
+      categories: ["cough", "pain", "sick"],
+      details: { cough: ["たんがからむ"], pain: ["ズキズキ", "重たい"] },
+      otherGate: null,
+      other: [],
+    });
+    assert.deepEqual(
+      rows.map((row) => row.key),
+      ["feelings", "detail-pain", "detail-cough", "bodyParts", "discomfort"],
+    );
+    assert.equal(rows[1].label, "「いたい」について（本人が選んだもの）");
+    assert.equal(rows[1].text, "ズキズキ、重たい");
+  });
+
+  test("ほかに きになること：ある＋選んだもの、ない、わからない を分けて出す", () => {
+    const row = (otherGate: "ある" | "ない" | "わからない", other: string[] = []) =>
+      buildPatientRows(patient, { ...EMPTY_SYMPTOMS, otherGate, other }).find(
+        (item) => item.key === "otherSymptoms",
+      );
+    assert.equal(row("ある", ["かゆい", "しびれる"])?.text, "かゆい、しびれる");
+    assert.equal(row("ない")?.text, "ない（と回答）");
+    assert.equal(row("わからない")?.state, "dont_know");
+  });
+
+  test("詳しい答えの行は任意なので、不明に数えない", () => {
+    const rows = buildPatientRows(patient, {
+      categories: ["pain"],
+      details: { pain: ["わからない"] },
+      otherGate: "わからない",
+      other: [],
+    });
+    assert.equal(rows.filter((item) => item.required && item.state !== "answered").length, 0);
   });
 });

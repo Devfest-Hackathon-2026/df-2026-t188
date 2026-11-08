@@ -8,7 +8,6 @@ import {
   DISCOMFORT_FACE_SRC,
   DISCOMFORT_LEVELS,
   DISCOMFORT_TEXTS,
-  FEELING_DISPLAY,
   FEELING_NOT_SENT,
   FEELINGS,
   type ChoiceDisplay,
@@ -38,11 +37,6 @@ function assertDisplay(display: ChoiceDisplay | undefined, value: string) {
 }
 
 describe("画面に出す言葉と絵", () => {
-  test("どんな かんじ：すべての選択肢に、言葉と絵がある", () => {
-    for (const value of FEELINGS) assertDisplay(FEELING_DISPLAY[value], value);
-    assert.equal(Object.keys(FEELING_DISPLAY).length, FEELINGS.length);
-  });
-
   test("どこが へん：すべての選択肢に、言葉と絵がある", () => {
     for (const value of BODY_PARTS) assertDisplay(BODY_PART_DISPLAY[value], value);
     assert.equal(Object.keys(BODY_PART_DISPLAY).length, BODY_PARTS.length);

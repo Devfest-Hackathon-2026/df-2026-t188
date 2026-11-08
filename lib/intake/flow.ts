@@ -1,5 +1,5 @@
 // 画面の順番と、進み具合のバーの区切り。画面の部品から切り離して、テストできるようにしている
-import type { IntakeState } from "./types";
+import { PATIENT_DETAIL_STEPS, type IntakeState } from "./types";
 
 export type Step = IntakeState["step"];
 export type CanSelfReport = IntakeState["canSelfReport"];
@@ -15,7 +15,7 @@ export type StepGroup =
   | "end";
 
 // 進み具合のバーの区切り（かずまさんの v3 のデザインの7区切り）。
-// 1つの区切りに、画面が複数入ることがある（あとで「症状を詳しく」に詳細の画面を足すため）
+// 1つの区切りに、画面が複数入ることがある（「症状を詳しく」には詳細の画面と「どこが へん？」が入る）
 export type ProgressSegment =
   | "respondent" // 誰が答えるか
   | "chooseSymptoms" // 症状を選ぶ
@@ -42,11 +42,17 @@ export type StepInfo = {
   segment: ProgressSegment | null; // バーのどの区切りか。バーを出さない画面は null
 };
 
-// 画面の順番。こどもは「どんな かんじ」→「どこが へん」→「どれくらい つらい」の順
+// 画面の順番。こどもは「症状をえらぶ」→「症状をくわしく」（選んだ数だけ）→「どこが へん」→「どれくらい つらい」
 export const STEPS: readonly StepInfo[] = [
   { key: "welcome", group: "welcome", fullName: "はじめ", segment: null },
   { key: "ability", group: "ability", fullName: "答えられるかの確認", segment: "respondent" },
-  { key: "patientFeeling", group: "patient", fullName: "どんな かんじ", segment: "chooseSymptoms" },
+  { key: "patientFeeling", group: "patient", fullName: "症状を えらぶ", segment: "chooseSymptoms" },
+  ...PATIENT_DETAIL_STEPS.map((key) => ({
+    key,
+    group: "patient" as const,
+    fullName: "症状を くわしく",
+    segment: "symptomDetails" as const,
+  })),
   { key: "patientBody", group: "patient", fullName: "どこが へん", segment: "symptomDetails" },
   { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい", segment: "discomfort" },
   { key: "patientBreak", group: "patient", fullName: "こどもの おわり", segment: null },
@@ -65,25 +71,54 @@ export function stepInfo(step: Step): StepInfo {
   return STEPS[stepIndex(step)];
 }
 
-// この流れで通る画面。最初に「難しい」を選んだときは、本人の画面（区切りも）を飛ばす
-export function flowSteps(canSelfReport: CanSelfReport): readonly StepInfo[] {
-  return canSelfReport === "difficult"
-    ? STEPS.filter((item) => item.group !== "patient")
-    : STEPS;
+// 詳細の画面の何番目か（1から）。詳細の画面でなければ 0
+export function detailNumber(step: Step): number {
+  return (PATIENT_DETAIL_STEPS as readonly string[]).indexOf(step) + 1;
+}
+
+// この流れで通る画面。
+// 最初に「難しい」を選んだときは、本人の画面（区切りも）を飛ばす。
+// 詳細の画面は、detailCount（選んだ主症状の画面と「そのほか」の数）だけ通る
+export function flowSteps(
+  canSelfReport: CanSelfReport,
+  detailCount: number,
+): readonly StepInfo[] {
+  return STEPS.filter((item) => {
+    if (canSelfReport === "difficult" && item.group === "patient") return false;
+    const number = detailNumber(item.key);
+    return number === 0 || number <= detailCount;
+  });
 }
 
 // 進み具合のバー。区切りは、この流れで通る画面が持つ区切りの数
 // （「できる」なら7、「難しい」ならこどもの3区切りを飛ばして4）。
-// current は今の区切りが何番目か。バーを出さない画面では null
+// current は今の区切りが何番目か。区切りに画面が複数あるときは、
+// inSegment に「区切りの中の何画面目か」と「画面の数」を入れる。バーを出さない画面では null
 export function progressOf(
   step: Step,
   canSelfReport: CanSelfReport,
-): { total: number; current: number } | null {
+  detailCount: number,
+): {
+  total: number;
+  current: number;
+  inSegment: { index: number; count: number } | null;
+} | null {
   const segment = stepInfo(step).segment;
   if (segment === null) return null;
-  const steps = flowSteps(canSelfReport);
+  const steps = flowSteps(canSelfReport, detailCount);
   const segments = PROGRESS_SEGMENTS.filter((item) =>
     steps.some((info) => info.segment === item),
   );
-  return { total: segments.length, current: segments.indexOf(segment) + 1 };
+  const stepsInSegment = steps.filter((info) => info.segment === segment);
+  return {
+    total: segments.length,
+    current: segments.indexOf(segment) + 1,
+    inSegment:
+      stepsInSegment.length > 1
+        ? {
+            index: stepsInSegment.findIndex((info) => info.key === step) + 1,
+            count: stepsInSegment.length,
+          }
+        : null,
+  };
 }

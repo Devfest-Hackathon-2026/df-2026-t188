@@ -25,11 +25,13 @@ import {
   safetyNotice,
   type SafetyNotice,
 } from "@/lib/intake/unknowns";
+import type { PatientSymptoms } from "@/lib/intake/symptoms";
 import { buildSummaryInput } from "@/lib/summary/input";
 
 type DoctorScreenProps = {
   canSelfReport: IntakeState["canSelfReport"];
   patient: PatientAnswers;
+  symptoms: PatientSymptoms; // こどもの主症状と詳しい答え（言葉で出すだけ。Gemini には送らない）
   family: FamilyAnswers;
   summaryCache: SummaryCache | null;
   onSummaryReady: (cache: SummaryCache) => void;
@@ -69,6 +71,7 @@ function SafetyLine({ notice }: { notice: SafetyNotice }) {
 export function DoctorScreen({
   canSelfReport,
   patient,
+  symptoms,
   family,
   summaryCache,
   onSummaryReady,
@@ -172,7 +175,7 @@ export function DoctorScreen({
                       最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答はすべて「回答困難」です。
                     </p>
                   )}
-                  <RowList rows={buildPatientRows(patient)} />
+                  <RowList rows={buildPatientRows(patient, symptoms)} />
                 </Card>
 
                 <Card>
