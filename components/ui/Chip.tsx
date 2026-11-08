@@ -15,7 +15,7 @@ export function chipSpanClass(label: string): string {
   return label.length >= WIDE_CHIP_LABEL_LENGTH ? "col-span-2" : "";
 }
 
-// 選んだときの色の層。背景が薄い緑、枠が緑になる。
+// 選んだときの色の層。背景が淡い青、枠が青になる。
 // 色を直接変えず、この層の透明度を変える（globals.css の .chip-layer）
 export function SelectedLayer({ rounded }: { rounded: string }) {
   return (
@@ -26,7 +26,7 @@ export function SelectedLayer({ rounded }: { rounded: string }) {
   );
 }
 
-// 右の丸。選ぶと緑になり、チェックが入る（globals.css の .chip-check）
+// 右の丸。選ぶと青になり、チェックが入る（globals.css の .chip-check）
 export function CheckDot() {
   return (
     <span
@@ -40,7 +40,7 @@ export function CheckDot() {
   );
 }
 
-// チップ。選ぶと背景が薄い緑、枠が緑になり、右の丸に緑のチェックが入る。
+// チップ。選ぶと背景が淡い青、枠が青になり、右の丸に青のチェックが入る。
 // 文字の位置は、選ぶ前後で変わらない
 export function Chip({ label, selected, onClick, className = "" }: ChipProps) {
   return (

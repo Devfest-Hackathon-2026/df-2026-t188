@@ -33,6 +33,7 @@ type DoctorScreenProps = {
   family: FamilyAnswers;
   summaryCache: SummaryCache | null;
   onSummaryReady: (cache: SummaryCache) => void;
+  onFinish: () => void; // 終了の画面へ
 };
 
 const RESPONDENT_LABEL = { patient: "本人", family: "保護者" } as const;
@@ -71,6 +72,7 @@ export function DoctorScreen({
   family,
   summaryCache,
   onSummaryReady,
+  onFinish,
 }: DoctorScreenProps) {
   const unknownRows = getUnknownRows(patient, family);
   const notices = [
@@ -188,20 +190,24 @@ export function DoctorScreen({
           </div>
         )}
       </div>
-      {/* 「詳しく見る」は下に固定する。要約が長くても、スクロールせずに押せる */}
-      {hasSummary && (
+      {/* 「詳しく見る」と「おわる」は下に固定する。要約が長くても、スクロールせずに押せる。
+          要約の作成中は「おわる」を出さない（作成中の画面から離れないように） */}
+      {!isLoading && (
         <BottomBar>
-          <Button
-            variant="outlined"
-            aria-expanded={isDetailOpen}
-            aria-controls="original-answers"
-            onClick={() => setIsOpenedByUser((isOpen) => !isOpen)}
-          >
-            <ChevronIcon
-              className={`h-6 w-6 ${isDetailOpen ? "-rotate-90" : "rotate-90"}`}
-            />
-            {isDetailOpen ? "閉じる" : "詳しく見る"}
-          </Button>
+          {hasSummary && (
+            <Button
+              variant="outlined"
+              aria-expanded={isDetailOpen}
+              aria-controls="original-answers"
+              onClick={() => setIsOpenedByUser((isOpen) => !isOpen)}
+            >
+              <ChevronIcon
+                className={`h-6 w-6 ${isDetailOpen ? "-rotate-90" : "rotate-90"}`}
+              />
+              {isDetailOpen ? "閉じる" : "詳しく見る"}
+            </Button>
+          )}
+          <Button onClick={onFinish}>問診をおわる</Button>
         </BottomBar>
       )}
     </>

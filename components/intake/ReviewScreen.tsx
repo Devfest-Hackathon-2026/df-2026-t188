@@ -21,6 +21,8 @@ type ReviewScreenProps = {
   patient: PatientAnswers;
   family: FamilyAnswers;
   onEdit: (target: EditTarget) => void;
+  // こどもの最初の画面（「難しい」のときは最初の質問）に戻る。入力した内容は消さない
+  onRedoPatient: () => void;
   onNext: () => void;
 };
 
@@ -63,6 +65,7 @@ export function ReviewScreen({
   patient,
   family,
   onEdit,
+  onRedoPatient,
   onNext,
 }: ReviewScreenProps) {
   const items = buildItems(patient, family);
@@ -70,14 +73,20 @@ export function ReviewScreen({
   return (
     <>
       <div className="flex flex-1 flex-col gap-4 px-4 py-4">
-        <p className="text-body">
-          入力した内容です。直したいところは「編集」を押してください。
-        </p>
-        <p className="text-support text-on-surface-variant">
-          {canSelfReport === "difficult"
-            ? "最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。変えるときは、上の「確認」を押してください。"
-            : "お子さんと一緒に、上の「こども」から直してください。"}
-        </p>
+        {/* こどもの答えは、ここでは書き換えない（本人と保護者の回答を混ぜないため）。
+            直すときは、こどもの画面に戻って、お子さんと一緒に選び直す */}
+        <div className="flex flex-col gap-3 rounded-lg bg-surface-container px-4 py-3">
+          <p className="text-support text-on-surface-variant">
+            {canSelfReport === "difficult"
+              ? "最初の質問で「お子さんが答えるのは難しい」が選ばれたため、本人の回答は「回答困難」です。"
+              : "本人の回答は、ここでは直せません。直すときは、お子さんと一緒に選び直してください。"}
+          </p>
+          <Button variant="outlined" onClick={onRedoPatient}>
+            {canSelfReport === "difficult"
+              ? "最初の質問にもどる"
+              : "お子さんと一緒に選び直す"}
+          </Button>
+        </div>
 
         {/* 項目ごとのカード：小さなラベル、内容（入力そのまま）、右の「編集」ボタン */}
         <ul className="stagger flex flex-col gap-3">

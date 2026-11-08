@@ -5,6 +5,7 @@ import { AbilityScreen } from "@/components/intake/AbilityScreen";
 import { BreakScreen } from "@/components/intake/BreakScreen";
 import { DoctorScreen } from "@/components/intake/DoctorScreen";
 import { EditSheet, type EditTarget } from "@/components/intake/EditSheet";
+import { EndScreen } from "@/components/intake/EndScreen";
 import { FamilyScreen, type FamilyPage } from "@/components/intake/FamilyScreen";
 import type { PatientFieldKey } from "@/components/intake/IntakeField";
 import { MascotGuide } from "@/components/intake/MascotGuide";
@@ -135,15 +136,21 @@ const DIRECTION_CLASS = {
   back: "screen-enter-back",
 };
 
-export function IntakeFlow() {
-  const [state, setState] = useState<FlowState>({
+function createInitialState(): FlowState {
+  return {
     step: "welcome",
     canSelfReport: null,
     patient: createUnansweredPatientAnswers(),
     family: createUnansweredFamilyAnswers(),
     reachedIndex: 0,
     direction: null,
-  });
+  };
+}
+
+export function IntakeFlow() {
+  const [state, setState] = useState<FlowState>(createInitialState);
+  // 終了の画面の「はじめから」。履歴を最初の画面まで戻し、着いたら回答をすべて消す
+  const isRestarting = useRef(false);
   // 要約も画面の中（Reactの状態）だけで持つ。閉じたら消える
   const [summaryCache, setSummaryCache] = useState<SummaryCache | null>(null);
   // 起動の画面。開いたときに一度だけ出す。画面の順番（履歴）には入れない
@@ -198,6 +205,13 @@ export function IntakeFlow() {
     onArrive: (step) => {
       isSheetCloseRequested.current = true;
       setSheet((prev) => prev && { ...prev, isClosing: true });
+      if (isRestarting.current && step === "welcome") {
+        // 回答も要約も消し、どこまで通ったかも最初に戻す（ブラウザの「進む」でも先へ行けない）
+        isRestarting.current = false;
+        setSummaryCache(null);
+        setState({ ...createInitialState(), direction: "back" });
+        return;
+      }
       setState((prev) => moveTo(prev, step));
     },
     // 回答が入るのは、最初の質問に答えたあとだけ
@@ -390,6 +404,11 @@ export function IntakeFlow() {
               patient={state.patient}
               family={state.family}
               onEdit={openSheet}
+              onRedoPatient={() =>
+                goToStep(
+                  state.canSelfReport === "difficult" ? "ability" : "patientFeeling",
+                )
+              }
               onNext={() => goToStep("doctor")}
             />
           )}
@@ -400,6 +419,16 @@ export function IntakeFlow() {
               family={state.family}
               summaryCache={summaryCache}
               onSummaryReady={setSummaryCache}
+              onFinish={goNext}
+            />
+          )}
+          {state.step === "end" && (
+            <EndScreen
+              onBackToDoctor={() => goToStep("doctor")}
+              onRestart={() => {
+                isRestarting.current = true;
+                goToStep("welcome");
+              }}
             />
           )}
         </div>
