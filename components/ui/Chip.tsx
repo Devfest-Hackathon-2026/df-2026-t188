@@ -5,6 +5,7 @@ type ChipProps = {
   selected: boolean;
   onClick: () => void;
   className?: string;
+  compact?: boolean; // 小さい表示（保護者の1ページで使う）。押せる高さは 44px を保つ
 };
 
 // 2列に並べるとき、この文字数以上の選択肢は横いっぱいの幅にする。
@@ -42,13 +43,21 @@ export function CheckDot() {
 
 // チップ。選ぶと背景が淡い青、枠が青になり、右の丸に青のチェックが入る。
 // 文字の位置は、選ぶ前後で変わらない
-export function Chip({ label, selected, onClick, className = "" }: ChipProps) {
+export function Chip({
+  label,
+  selected,
+  onClick,
+  className = "",
+  compact = false,
+}: ChipProps) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`press-feedback chunky relative flex min-h-14 items-center justify-between gap-2 rounded-md border-2 border-card-line bg-surface-container-lowest px-2.5 py-2 text-left text-label focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
+      className={`press-feedback chunky relative flex items-center justify-between gap-2 rounded-md border-2 border-card-line bg-surface-container-lowest px-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface ${
+        compact ? "min-h-11 py-1 text-support" : "min-h-14 py-2 text-label"
+      } ${
         selected ? "text-on-primary-container" : "text-on-surface"
       } ${className}`}
     >

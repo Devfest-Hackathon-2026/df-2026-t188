@@ -71,15 +71,16 @@ describe("こどもの画面の案内", () => {
 
 describe("保護者の画面と見直しの案内", () => {
   test("入力する前は calm、その画面の項目に1つ答えたら listen。説明を残すため返事は出さない", () => {
-    assert.equal(guideFor("familyCondition", patient, family)?.pose, "calm");
+    assert.equal(guideFor("familyRecord", patient, family)?.pose, "calm");
     const answered = guideFor(
-      "familyCondition",
+      "familyRecord",
       patient,
       { ...family, foodIntake: { respondent: "family", status: "answered", value: "少ない" } },
     );
     assert.equal(answered?.pose, "listen");
     assert.equal(answered?.reaction, "");
-    assert.equal(answered?.description, "わかる範囲で教えてください。");
+    assert.equal(answered?.title, "家族からの記録");
+    assert.equal(answered?.description, "保護者の方から見たようすを、わかる範囲で教えてください。");
   });
 
   test("ほかの画面の項目に答えても、この画面の表情は変わらない", () => {

@@ -28,9 +28,15 @@ export type Guide = {
 // 保護者の画面ごとに、答えたかを見る項目
 const FAMILY_PAGE_FIELDS: Partial<Record<Step, (keyof FamilyAnswers)[]>> = {
   familyProfile: ["age", "sex", "height", "weight"],
-  familyConcern: ["chiefConcern", "onset"],
-  familyCondition: ["temperature", "foodIntake"],
-  familyHistory: ["medications", "allergies", "conditions"],
+  familyRecord: [
+    "chiefConcern",
+    "onset",
+    "temperature",
+    "foodIntake",
+    "conditions",
+    "allergies",
+    "medications",
+  ],
 };
 
 const FAMILY_TEXT: Partial<Record<Step, { title: string; description: string }>> = {
@@ -38,17 +44,10 @@ const FAMILY_TEXT: Partial<Record<Step, { title: string; description: string }>>
     title: "お子さんのこと",
     description: "わかる範囲で入力してください。すべて任意です。",
   },
-  familyConcern: {
-    title: "一番心配なこと・いつから",
-    description: "保護者の方から見たようすを教えてください。",
-  },
-  familyCondition: {
-    title: "熱・食べる飲む",
-    description: "わかる範囲で教えてください。",
-  },
-  familyHistory: {
-    title: "薬・アレルギー・持病",
-    description: "「ある」のときは、内容も書けます（書かなくても進めます）。",
+  // 見出しは、バーの区切りの名前（家族からの記録）にそろえる
+  familyRecord: {
+    title: "家族からの記録",
+    description: "保護者の方から見たようすを、わかる範囲で教えてください。",
   },
 };
 
@@ -112,9 +111,7 @@ export function guideFor(
         : { pose: "empathy", title, description, reaction: "" };
     }
     case "familyProfile":
-    case "familyConcern":
-    case "familyCondition":
-    case "familyHistory": {
+    case "familyRecord": {
       // 保護者の画面は、表情だけを変えて返事は出さない。
       // 返事は説明と入れ替わるので、「任意です」などの説明を消さないため
       const text = FAMILY_TEXT[step]!;

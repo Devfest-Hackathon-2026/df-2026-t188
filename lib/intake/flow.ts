@@ -14,28 +14,47 @@ export type StepGroup =
   | "doctor"
   | "end";
 
+// 進み具合のバーの区切り（かずまさんの v3 のデザインの7区切り）。
+// 1つの区切りに、画面が複数入ることがある（あとで「症状を詳しく」に詳細の画面を足すため）
+export type ProgressSegment =
+  | "respondent" // 誰が答えるか
+  | "chooseSymptoms" // 症状を選ぶ
+  | "symptomDetails" // 症状を詳しく
+  | "discomfort" // つらさを選ぶ
+  | "profile" // 基本情報
+  | "familyRecord" // 家族からの記録
+  | "review"; // 確認
+
+export const PROGRESS_SEGMENTS: readonly ProgressSegment[] = [
+  "respondent",
+  "chooseSymptoms",
+  "symptomDetails",
+  "discomfort",
+  "profile",
+  "familyRecord",
+  "review",
+];
+
 export type StepInfo = {
   key: Step;
   group: StepGroup;
   fullName: string; // 「もどる」で読み上げ機能に伝える、戻り先の名前
-  hasProgress: boolean; // 進み具合のバーに区切りを持つ画面か（質問と見直しの画面だけ）
+  segment: ProgressSegment | null; // バーのどの区切りか。バーを出さない画面は null
 };
 
 // 画面の順番。こどもは「どんな かんじ」→「どこが へん」→「どれくらい つらい」の順
 export const STEPS: readonly StepInfo[] = [
-  { key: "welcome", group: "welcome", fullName: "はじめ", hasProgress: false },
-  { key: "ability", group: "ability", fullName: "答えられるかの確認", hasProgress: true },
-  { key: "patientFeeling", group: "patient", fullName: "どんな かんじ", hasProgress: true },
-  { key: "patientBody", group: "patient", fullName: "どこが へん", hasProgress: true },
-  { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい", hasProgress: true },
-  { key: "patientBreak", group: "patient", fullName: "こどもの おわり", hasProgress: false },
-  { key: "familyProfile", group: "family", fullName: "お子さんのこと", hasProgress: true },
-  { key: "familyConcern", group: "family", fullName: "心配なこと・いつから", hasProgress: true },
-  { key: "familyCondition", group: "family", fullName: "熱・食べる飲む", hasProgress: true },
-  { key: "familyHistory", group: "family", fullName: "薬・アレルギー・持病", hasProgress: true },
-  { key: "review", group: "review", fullName: "入力内容の見直し", hasProgress: true },
-  { key: "doctor", group: "doctor", fullName: "医師に見せる", hasProgress: false },
-  { key: "end", group: "end", fullName: "おわり", hasProgress: false },
+  { key: "welcome", group: "welcome", fullName: "はじめ", segment: null },
+  { key: "ability", group: "ability", fullName: "答えられるかの確認", segment: "respondent" },
+  { key: "patientFeeling", group: "patient", fullName: "どんな かんじ", segment: "chooseSymptoms" },
+  { key: "patientBody", group: "patient", fullName: "どこが へん", segment: "symptomDetails" },
+  { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい", segment: "discomfort" },
+  { key: "patientBreak", group: "patient", fullName: "こどもの おわり", segment: null },
+  { key: "familyProfile", group: "family", fullName: "お子さんのこと", segment: "profile" },
+  { key: "familyRecord", group: "family", fullName: "家族からの記録", segment: "familyRecord" },
+  { key: "review", group: "review", fullName: "入力内容の見直し", segment: "review" },
+  { key: "doctor", group: "doctor", fullName: "医師に見せる", segment: null },
+  { key: "end", group: "end", fullName: "おわり", segment: null },
 ];
 
 export function stepIndex(step: Step): number {
@@ -53,13 +72,18 @@ export function flowSteps(canSelfReport: CanSelfReport): readonly StepInfo[] {
     : STEPS;
 }
 
-// 進み具合のバー。区切りは、この流れで通る「区切りを持つ画面」の数
-// （「できる」なら9、「難しい」なら6）。区切りを持たない画面では null
+// 進み具合のバー。区切りは、この流れで通る画面が持つ区切りの数
+// （「できる」なら7、「難しい」ならこどもの3区切りを飛ばして4）。
+// current は今の区切りが何番目か。バーを出さない画面では null
 export function progressOf(
   step: Step,
   canSelfReport: CanSelfReport,
 ): { total: number; current: number } | null {
-  const steps = flowSteps(canSelfReport).filter((item) => item.hasProgress);
-  const index = steps.findIndex((item) => item.key === step);
-  return index === -1 ? null : { total: steps.length, current: index + 1 };
+  const segment = stepInfo(step).segment;
+  if (segment === null) return null;
+  const steps = flowSteps(canSelfReport);
+  const segments = PROGRESS_SEGMENTS.filter((item) =>
+    steps.some((info) => info.segment === item),
+  );
+  return { total: segments.length, current: segments.indexOf(segment) + 1 };
 }

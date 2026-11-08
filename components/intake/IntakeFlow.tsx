@@ -50,9 +50,7 @@ const PATIENT_FIELDS: Partial<Record<Step, PatientFieldKey>> = {
 
 const FAMILY_PAGES: Partial<Record<Step, FamilyPage>> = {
   familyProfile: "profile",
-  familyConcern: "concern",
-  familyCondition: "condition",
-  familyHistory: "history",
+  familyRecord: "record",
 };
 
 // 全面が青い画面（上の部分を出さない）
@@ -395,7 +393,7 @@ export function IntakeFlow() {
                 }))
               }
               onNext={goNext}
-              nextLabel={familyPage === "history" ? "次へ（見直し）" : "次へ"}
+              nextLabel={familyPage === "record" ? "次へ（見直し）" : "次へ"}
             />
           )}
           {state.step === "review" && (

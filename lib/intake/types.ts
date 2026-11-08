@@ -64,9 +64,7 @@ export type IntakeState = {
     | "patientDiscomfort"
     | "patientBreak" // こどもの区切り（おつかれさま）
     | "familyProfile" // 年齢・性別・身長・体重
-    | "familyConcern"
-    | "familyCondition"
-    | "familyHistory"
+    | "familyRecord" // 家族からの記録（一番心配なこと・いつから・熱・食べる飲む・持病・アレルギー・薬を1ページで）
     | "review"
     | "doctor"
     | "end";

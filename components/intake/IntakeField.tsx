@@ -142,7 +142,17 @@ const HEIGHT_PATTERN = TEMPERATURE_PATTERN; // 身長も整数か小数1桁
 const TEXT_INPUT_CLASS =
   "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface placeholder:text-on-surface-variant focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
 
+// 小さい入力欄（保護者の1ページで使う）
+const COMPACT_TEXT_INPUT_CLASS =
+  "w-full rounded-field border border-outline bg-surface-container-lowest px-3 py-2 text-support text-on-surface placeholder:text-on-surface-variant focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
+
 const FIELD_LABEL_CLASS = "mb-4 block text-title";
+const COMPACT_FIELD_LABEL_CLASS = "mb-2 block text-label font-bold";
+
+const textInputClass = (compact: boolean) =>
+  compact ? COMPACT_TEXT_INPUT_CLASS : TEXT_INPUT_CLASS;
+const fieldLabelClass = (compact: boolean) =>
+  compact ? COMPACT_FIELD_LABEL_CLASS : FIELD_LABEL_CLASS;
 
 function toChoiceAnswer<T>(value: T | null): FamilyAnswer<T> {
   return value === null
@@ -174,11 +184,12 @@ type PresenceFieldProps = {
   label: string;
   answer: FamilyAnswer<Presence>;
   onChange: (next: FamilyAnswer<Presence>) => void;
+  compact: boolean;
 };
 
 // 最初に「ある／ない／わからない」を選び、「ある」のときだけ入力欄を出す。
 // ほかに変えると、書いた内容は消える（回答を選び直すと、値ごと入れ替わる）
-function PresenceField({ id, label, answer, onChange }: PresenceFieldProps) {
+function PresenceField({ id, label, answer, onChange, compact }: PresenceFieldProps) {
   const value = choiceOf(answer);
 
   return (
@@ -190,10 +201,14 @@ function PresenceField({ id, label, answer, onChange }: PresenceFieldProps) {
         onChange={(next) =>
           onChange(toChoiceAnswer(next ? OPTION_TO_PRESENCE[next] : null))
         }
+        compact={compact}
       />
       {value?.kind === "yes" && (
-        <div className="mt-4">
-          <label htmlFor={id} className="mb-2 block text-body">
+        <div className={compact ? "mt-3" : "mt-4"}>
+          <label
+            htmlFor={id}
+            className={`mb-2 block ${compact ? "text-support" : "text-body"}`}
+          >
             内容（書かなくても大丈夫です）
           </label>
           <textarea
@@ -209,7 +224,7 @@ function PresenceField({ id, label, answer, onChange }: PresenceFieldProps) {
                 }),
               )
             }
-            className={TEXT_INPUT_CLASS}
+            className={textInputClass(compact)}
           />
         </div>
       )}
@@ -289,10 +304,12 @@ function TemperatureField({
   answer,
   onChange,
   onInvalidChange,
+  compact,
 }: {
   answer: FamilyAnswers["temperature"];
   onChange: (next: FamilyAnswers["temperature"]) => void;
   onInvalidChange?: (isInvalid: boolean) => void;
+  compact: boolean;
 }) {
   const temperature = choiceOf(answer);
   const [text, setText] = useState(
@@ -303,7 +320,7 @@ function TemperatureField({
 
   return (
     <>
-      <label htmlFor="temperature" className={FIELD_LABEL_CLASS}>
+      <label htmlFor="temperature" className={fieldLabelClass(compact)}>
         熱
       </label>
       <div className="flex items-center gap-2">
@@ -327,11 +344,11 @@ function TemperatureField({
             );
             onInvalidChange?.(trimmed !== "" && !isValid);
           }}
-          className={`${TEXT_INPUT_CLASS} max-w-40 ${
+          className={`${textInputClass(compact)} ${compact ? "max-w-32" : "max-w-40"} ${
             isInvalid ? "border-caution" : ""
           }`}
         />
-        <span className="text-title">℃</span>
+        <span className={compact ? "text-label" : "text-title"}>℃</span>
       </div>
       <p
         id="temperature-hint"
@@ -351,7 +368,8 @@ function TemperatureField({
           onChange(toChoiceAnswer(isNotMeasured ? null : { kind: "not_measured" }));
           onInvalidChange?.(false);
         }}
-        className="mt-3 w-full"
+        className={compact ? "mt-2 w-full" : "mt-3 w-full"}
+        compact={compact}
       />
     </>
   );
@@ -362,24 +380,27 @@ export function FamilyField({
   answers,
   onChange,
   onInvalidChange,
+  compact = false,
 }: {
   field: FamilyFieldKey;
   answers: FamilyAnswers;
   onChange: (update: Partial<FamilyAnswers>) => void;
   // 形の違う入力があるかを知らせる。シートで、前の正しい値を消さないために使う
   onInvalidChange?: (isInvalid: boolean) => void;
+  // 小さい表示。保護者の1ページ（家族からの記録）で使う。見直しのシートでは使わない
+  compact?: boolean;
 }) {
   switch (field) {
     case "chiefConcern": {
       const text = choiceOf(answers.chiefConcern) ?? "";
       return (
         <>
-          <label htmlFor="chief-concern" className={FIELD_LABEL_CLASS}>
+          <label htmlFor="chief-concern" className={fieldLabelClass(compact)}>
             一番心配なこと（任意）
           </label>
           <textarea
             id="chief-concern"
-            rows={3}
+            rows={compact ? 2 : 3}
             autoComplete="off"
             value={text}
             onChange={(event) =>
@@ -389,7 +410,7 @@ export function FamilyField({
                 ),
               })
             }
-            className={TEXT_INPUT_CLASS}
+            className={textInputClass(compact)}
           />
           <CharCount text={text} />
         </>
@@ -402,6 +423,7 @@ export function FamilyField({
           options={ONSET_OPTIONS}
           selected={choiceOf(answers.onset)}
           onChange={(next) => onChange({ onset: toChoiceAnswer(next) })}
+          compact={compact}
         />
       );
     case "temperature":
@@ -410,6 +432,7 @@ export function FamilyField({
           answer={answers.temperature}
           onChange={(next) => onChange({ temperature: next })}
           onInvalidChange={onInvalidChange}
+          compact={compact}
         />
       );
     case "foodIntake":
@@ -419,6 +442,7 @@ export function FamilyField({
           options={FOOD_INTAKE_OPTIONS}
           selected={choiceOf(answers.foodIntake)}
           onChange={(next) => onChange({ foodIntake: toChoiceAnswer(next) })}
+          compact={compact}
         />
       );
     case "medications":
@@ -428,6 +452,7 @@ export function FamilyField({
           label="飲んでいる薬"
           answer={answers.medications}
           onChange={(next) => onChange({ medications: next })}
+          compact={compact}
         />
       );
     case "allergies":
@@ -437,6 +462,7 @@ export function FamilyField({
           label="アレルギー"
           answer={answers.allergies}
           onChange={(next) => onChange({ allergies: next })}
+          compact={compact}
         />
       );
     case "conditions":
@@ -446,6 +472,7 @@ export function FamilyField({
           label="持病"
           answer={answers.conditions}
           onChange={(next) => onChange({ conditions: next })}
+          compact={compact}
         />
       );
     case "age":
