@@ -51,15 +51,6 @@ export function PencilIcon({ className }: IconProps) {
   );
 }
 
-// 最初の画面の絵のハート
-export function HeartIcon({ className }: IconProps) {
-  return (
-    <Icon className={className} strokeWidth={2.5}>
-      <path d="M12 20s-7.5-4.6-9.3-9.3A5.2 5.2 0 0 1 12 6.6a5.2 5.2 0 0 1 9.3 4.1C19.5 15.4 12 20 12 20z" />
-    </Icon>
-  );
-}
-
 // ここから下は、「どこが へん？」のカードの人型の図。その部位だけ色を変える。
 // 形は子ども向けのデモ（.claude/design-ref/kids）の人型の図のもの。耳だけ描き足している。
 // 今は絵文字を使っているが、lib/intake/options.ts の表で { figure: ... } にすると、この図に替わる

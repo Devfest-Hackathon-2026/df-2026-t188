@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AbilityScreen } from "@/components/intake/AbilityScreen";
 import { BreakScreen } from "@/components/intake/BreakScreen";
 import { DoctorScreen } from "@/components/intake/DoctorScreen";
@@ -10,6 +10,7 @@ import type { PatientFieldKey } from "@/components/intake/IntakeField";
 import { MascotGuide } from "@/components/intake/MascotGuide";
 import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
+import { SplashScreen } from "@/components/intake/SplashScreen";
 import type { SummaryCache } from "@/components/intake/SummarySection";
 import { useStepHistory } from "@/components/intake/useStepHistory";
 import { WelcomeScreen } from "@/components/intake/WelcomeScreen";
@@ -145,6 +146,9 @@ export function IntakeFlow() {
   });
   // 要約も画面の中（Reactの状態）だけで持つ。閉じたら消える
   const [summaryCache, setSummaryCache] = useState<SummaryCache | null>(null);
+  // 起動の画面。開いたときに一度だけ出す。画面の順番（履歴）には入れない
+  const [isSplashShown, setIsSplashShown] = useState(true);
+  const hideSplash = useCallback(() => setIsSplashShown(false), []);
 
   // 画面（ステップ）が切り替わるたびに、ページの一番上を表示し、
   // 新しい画面の見出しにフォーカスを移す（読み上げ機能に、画面が変わったことを伝える）
@@ -244,172 +248,177 @@ export function IntakeFlow() {
   const goNext = () => goToStep(nextStep(state));
 
   return (
-    <main
-      ref={mainRef}
-      className="mx-auto flex w-full max-w-110 flex-1 flex-col overflow-x-clip text-body"
-    >
-      {/* 上の部分（「もどる」、だれに向けた画面か、進み具合のバー）。スクロールしても上に残る */}
-      {hasHeader && (
-        <header className="sticky top-0 z-20 flex flex-col gap-3 border-b-2 border-line bg-surface-container-lowest px-4 pt-3 pb-3">
-          <div className="flex min-h-12 items-center gap-2">
-            <div className="w-24 shrink-0">
-              {previous && (
-                <BackButton
-                  destination={previous.fullName}
-                  onClick={() => goToStep(previous.key)}
-                />
-              )}
-            </div>
-            <div className="flex-1 text-center">
-              {audience &&
-                (group === "doctor" ? (
-                  // 医師の画面には案内ボックスがないので、ここを画面の見出しにする
-                  <h1
-                    tabIndex={-1}
-                    data-screen-heading
-                    className="inline-block rounded-full bg-primary-container px-3 py-0.5 text-support font-bold text-on-primary-container outline-none"
-                  >
-                    {audience}
-                  </h1>
-                ) : (
-                  <span
-                    className={`inline-block rounded-full px-3 py-0.5 text-support font-bold ${
-                      group === "patient"
-                        ? "bg-primary-container text-on-primary-container"
-                        : "bg-family-container text-family"
-                    }`}
-                  >
-                    {audience}
-                  </span>
-                ))}
-            </div>
-            <div aria-hidden="true" className="w-24 shrink-0" />
-          </div>
-          {progress && <ProgressBar total={progress.total} current={progress.current} />}
-        </header>
-      )}
-      <div
-        key={state.step}
-        className={`flex flex-1 flex-col ${
-          state.direction ? DIRECTION_CLASS[state.direction] : ""
-        }`}
+    <>
+      {isSplashShown && <SplashScreen onDone={hideSplash} />}
+      <main
+        ref={mainRef}
+        // 起動の画面が出ている間は、後ろの画面を押せず、読み上げ機能でも移れないようにする
+        inert={isSplashShown}
+        className="mx-auto flex w-full max-w-110 flex-1 flex-col overflow-x-clip text-body"
       >
-        {guide && (
-          <div className="px-4 pt-4">
-            <MascotGuide guide={guide} kana={group === "patient"} />
-          </div>
+        {/* 上の部分（「もどる」、だれに向けた画面か、進み具合のバー）。スクロールしても上に残る */}
+        {hasHeader && (
+          <header className="sticky top-0 z-20 flex flex-col gap-3 border-b-2 border-line bg-surface-container-lowest px-4 pt-3 pb-3">
+            <div className="flex min-h-12 items-center gap-2">
+              <div className="w-24 shrink-0">
+                {previous && (
+                  <BackButton
+                    destination={previous.fullName}
+                    onClick={() => goToStep(previous.key)}
+                  />
+                )}
+              </div>
+              <div className="flex-1 text-center">
+                {audience &&
+                  (group === "doctor" ? (
+                    // 医師の画面には案内ボックスがないので、ここを画面の見出しにする
+                    <h1
+                      tabIndex={-1}
+                      data-screen-heading
+                      className="inline-block rounded-full bg-primary-container px-3 py-0.5 text-support font-bold text-on-primary-container outline-none"
+                    >
+                      {audience}
+                    </h1>
+                  ) : (
+                    <span
+                      className={`inline-block rounded-full px-3 py-0.5 text-support font-bold ${
+                        group === "patient"
+                          ? "bg-primary-container text-on-primary-container"
+                          : "bg-family-container text-family"
+                      }`}
+                    >
+                      {audience}
+                    </span>
+                  ))}
+              </div>
+              <div aria-hidden="true" className="w-24 shrink-0" />
+            </div>
+            {progress && <ProgressBar total={progress.total} current={progress.current} />}
+          </header>
         )}
-        {state.step === "welcome" && (
-          <WelcomeScreen onStart={() => goToStep("ability")} />
-        )}
-        {state.step === "ability" && (
-          <AbilityScreen
-            canSelfReport={state.canSelfReport}
-            hasPatientInput={hasPatientInput}
-            onChooseAble={() => {
-              stepHistory.pushSteps(["patientFeeling"]);
-              setState((prev) =>
-                moveTo(
-                  {
-                    ...prev,
-                    canSelfReport: "able",
-                    patient:
-                      prev.canSelfReport === "difficult"
-                        ? createUnansweredPatientAnswers()
-                        : prev.patient,
-                    // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
-                    reachedIndex:
-                      prev.canSelfReport === "able"
-                        ? prev.reachedIndex
-                        : ABILITY_INDEX,
-                  },
-                  "patientFeeling",
-                ),
-              );
-            }}
-            onChooseDifficult={() =>
-              setState((prev) => ({
-                ...prev,
-                canSelfReport: "difficult",
-                patient: createDifficultPatientAnswers(),
-                // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
-                reachedIndex:
-                  prev.canSelfReport === "difficult"
-                    ? prev.reachedIndex
-                    : ABILITY_INDEX,
-              }))
-            }
-            onNext={goNext}
-          />
-        )}
-        {patientField && (
-          <PatientScreen
-            field={patientField}
-            answers={state.patient}
-            onChange={(update) =>
-              setState((prev) => ({
-                ...prev,
-                patient: { ...prev.patient, ...update },
-              }))
-            }
-            onNext={goNext}
-          />
-        )}
-        {state.step === "patientBreak" && previous && (
-          <BreakScreen
-            backDestination={previous.fullName}
-            onBack={() => goToStep(previous.key)}
-            onNext={goNext}
-          />
-        )}
-        {familyPage && (
-          <FamilyScreen
-            page={familyPage}
-            answers={state.family}
-            onChange={(update) =>
+        <div
+          key={state.step}
+          className={`flex flex-1 flex-col ${
+            state.direction ? DIRECTION_CLASS[state.direction] : ""
+          }`}
+        >
+          {guide && (
+            <div className="px-4 pt-4">
+              <MascotGuide guide={guide} kana={group === "patient"} />
+            </div>
+          )}
+          {state.step === "welcome" && (
+            <WelcomeScreen onStart={() => goToStep("ability")} />
+          )}
+          {state.step === "ability" && (
+            <AbilityScreen
+              canSelfReport={state.canSelfReport}
+              hasPatientInput={hasPatientInput}
+              onChooseAble={() => {
+                stepHistory.pushSteps(["patientFeeling"]);
+                setState((prev) =>
+                  moveTo(
+                    {
+                      ...prev,
+                      canSelfReport: "able",
+                      patient:
+                        prev.canSelfReport === "difficult"
+                          ? createUnansweredPatientAnswers()
+                          : prev.patient,
+                      // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
+                      reachedIndex:
+                        prev.canSelfReport === "able"
+                          ? prev.reachedIndex
+                          : ABILITY_INDEX,
+                    },
+                    "patientFeeling",
+                  ),
+                );
+              }}
+              onChooseDifficult={() =>
+                setState((prev) => ({
+                  ...prev,
+                  canSelfReport: "difficult",
+                  patient: createDifficultPatientAnswers(),
+                  // 最初の質問の答えを変えたら、先の画面は「まだ通っていない」扱いに戻す
+                  reachedIndex:
+                    prev.canSelfReport === "difficult"
+                      ? prev.reachedIndex
+                      : ABILITY_INDEX,
+                }))
+              }
+              onNext={goNext}
+            />
+          )}
+          {patientField && (
+            <PatientScreen
+              field={patientField}
+              answers={state.patient}
+              onChange={(update) =>
+                setState((prev) => ({
+                  ...prev,
+                  patient: { ...prev.patient, ...update },
+                }))
+              }
+              onNext={goNext}
+            />
+          )}
+          {state.step === "patientBreak" && previous && (
+            <BreakScreen
+              backDestination={previous.fullName}
+              onBack={() => goToStep(previous.key)}
+              onNext={goNext}
+            />
+          )}
+          {familyPage && (
+            <FamilyScreen
+              page={familyPage}
+              answers={state.family}
+              onChange={(update) =>
+                setState((prev) => ({
+                  ...prev,
+                  family: { ...prev.family, ...update },
+                }))
+              }
+              onNext={goNext}
+              nextLabel={familyPage === "history" ? "次へ（見直し）" : "次へ"}
+            />
+          )}
+          {state.step === "review" && (
+            <ReviewScreen
+              canSelfReport={state.canSelfReport}
+              patient={state.patient}
+              family={state.family}
+              onEdit={openSheet}
+              onNext={() => goToStep("doctor")}
+            />
+          )}
+          {state.step === "doctor" && (
+            <DoctorScreen
+              canSelfReport={state.canSelfReport}
+              patient={state.patient}
+              family={state.family}
+              summaryCache={summaryCache}
+              onSummaryReady={setSummaryCache}
+            />
+          )}
+        </div>
+        {sheet && (
+          <EditSheet
+            target={sheet.target}
+            isClosing={sheet.isClosing}
+            family={state.family}
+            onSave={(update) =>
               setState((prev) => ({
                 ...prev,
                 family: { ...prev.family, ...update },
               }))
             }
-            onNext={goNext}
-            nextLabel={familyPage === "history" ? "次へ（見直し）" : "次へ"}
+            onRequestClose={requestSheetClose}
+            onClosed={() => setSheet(null)}
           />
         )}
-        {state.step === "review" && (
-          <ReviewScreen
-            canSelfReport={state.canSelfReport}
-            patient={state.patient}
-            family={state.family}
-            onEdit={openSheet}
-            onNext={() => goToStep("doctor")}
-          />
-        )}
-        {state.step === "doctor" && (
-          <DoctorScreen
-            canSelfReport={state.canSelfReport}
-            patient={state.patient}
-            family={state.family}
-            summaryCache={summaryCache}
-            onSummaryReady={setSummaryCache}
-          />
-        )}
-      </div>
-      {sheet && (
-        <EditSheet
-          target={sheet.target}
-          isClosing={sheet.isClosing}
-          family={state.family}
-          onSave={(update) =>
-            setState((prev) => ({
-              ...prev,
-              family: { ...prev.family, ...update },
-            }))
-          }
-          onRequestClose={requestSheetClose}
-          onClosed={() => setSheet(null)}
-        />
-      )}
-    </main>
+      </main>
+    </>
   );
 }
