@@ -2,7 +2,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import type { FamilyAnswers, PatientAnswers, Presence } from "@/lib/intake/types";
-import { getUnknownRows, safetyNotice } from "@/lib/intake/unknowns";
+import {
+  buildFamilyRows,
+  buildPatientRows,
+  getUnknownRows,
+  safetyNotice,
+} from "@/lib/intake/unknowns";
 
 const answeredPatient = <T>(value: T) =>
   ({ respondent: "patient", status: "answered", value }) as const;
@@ -156,5 +161,41 @@ describe("薬・アレルギーの ⚠ の行", () => {
 
   test("「ない」は何も出さない", () => {
     assert.equal(safetyNotice("アレルギー", answeredFamily({ kind: "no" })), null);
+  });
+});
+
+describe("見直しと医師の画面の行", () => {
+  test("こどもの行は、入力の順（どんなかんじ → へんなところ → つらさ）", () => {
+    assert.deepEqual(
+      buildPatientRows(patient).map((row) => row.key),
+      ["feelings", "bodyParts", "discomfort"],
+    );
+  });
+
+  test("保護者の行は、入力の順（お子さんのこと → 心配なこと → … → 持病）", () => {
+    assert.deepEqual(
+      buildFamilyRows(family).map((row) => row.key),
+      [
+        "age",
+        "sex",
+        "height",
+        "weight",
+        "chiefConcern",
+        "onset",
+        "temperature",
+        "foodIntake",
+        "medications",
+        "allergies",
+        "conditions",
+      ],
+    );
+  });
+
+  test("性別は選んだまま、身長は cm を付けて出す。どちらも任意", () => {
+    const rows = buildFamilyRows(family);
+    const sex = rows.find((row) => row.key === "sex");
+    const height = rows.find((row) => row.key === "height");
+    assert.deepEqual([sex?.text, sex?.required], ["女の子", false]);
+    assert.deepEqual([height?.text, height?.required], ["125 cm", false]);
   });
 });
