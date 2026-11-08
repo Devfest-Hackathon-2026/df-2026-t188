@@ -59,18 +59,18 @@ const formatTemperature = (value: Temperature) =>
 export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
   return [
     {
-      key: "bodyParts",
-      respondent: "patient",
-      label: "へんなところ（本人が選んだもの）",
-      required: true,
-      ...describe(patient.bodyParts, neverDontKnow, joinList),
-    },
-    {
       key: "feelings",
       respondent: "patient",
       label: "どんなかんじ（本人が選んだもの）",
       required: false,
       ...describe(patient.feelings, neverDontKnow, joinList),
+    },
+    {
+      key: "bodyParts",
+      respondent: "patient",
+      label: "へんなところ（本人が選んだもの）",
+      required: true,
+      ...describe(patient.bodyParts, neverDontKnow, joinList),
     },
     {
       key: "discomfort",
@@ -84,6 +84,34 @@ export function buildPatientRows(patient: PatientAnswers): AnswerRow[] {
 
 export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
   return [
+    {
+      key: "age",
+      respondent: "family",
+      label: "年齢",
+      required: false,
+      ...describe(family.age, neverDontKnow, (value) => `${value} 歳`),
+    },
+    {
+      key: "sex",
+      respondent: "family",
+      label: "性別",
+      required: false,
+      ...describe(family.sex, neverDontKnow, asWritten),
+    },
+    {
+      key: "height",
+      respondent: "family",
+      label: "身長",
+      required: false,
+      ...describe(family.height, neverDontKnow, (value) => `${value} cm`),
+    },
+    {
+      key: "weight",
+      respondent: "family",
+      label: "体重",
+      required: false,
+      ...describe(family.weight, neverDontKnow, (value) => `${value} kg`),
+    },
     {
       key: "chiefConcern",
       respondent: "family",
@@ -132,20 +160,6 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       label: "持病",
       required: false,
       ...describe(family.conditions, isDontKnowPresence, formatPresence),
-    },
-    {
-      key: "age",
-      respondent: "family",
-      label: "年齢",
-      required: false,
-      ...describe(family.age, neverDontKnow, (value) => `${value} 歳`),
-    },
-    {
-      key: "weight",
-      respondent: "family",
-      label: "体重",
-      required: false,
-      ...describe(family.weight, neverDontKnow, (value) => `${value} kg`),
     },
   ];
 }

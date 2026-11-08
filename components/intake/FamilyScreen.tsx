@@ -7,9 +7,9 @@ import type { FamilyAnswers } from "@/lib/intake/types";
 // 保護者の画面は4つに分ける。最初はお子さんのこと（すべて任意）
 export type FamilyPage = "profile" | "concern" | "condition" | "history";
 
-// 1つのカードに入れる項目。2つ並べるものは配列にする
-const PAGE_FIELDS: Record<FamilyPage, (FamilyFieldKey | [FamilyFieldKey, FamilyFieldKey])[]> = {
-  profile: [["age", "weight"]],
+// 1つのカードに入れる項目。配列は2列に並べる（1つだけなら左半分）
+const PAGE_FIELDS: Record<FamilyPage, (FamilyFieldKey | FamilyFieldKey[])[]> = {
+  profile: ["sex", ["age", "height"], ["weight"]],
   concern: ["chiefConcern", "onset"],
   condition: ["temperature", "foodIntake"],
   history: ["medications", "allergies", "conditions"],
