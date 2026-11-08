@@ -4,6 +4,7 @@ import type {
   Feeling,
   FoodIntake,
   Onset,
+  Sex,
 } from "./options";
 
 // respondent は「誰の欄の回答か」を表す。本人と保護者の回答を型で混ぜないようにする
@@ -49,6 +50,8 @@ export type FamilyAnswers = {
   allergies: FamilyAnswer<Presence>; // Gemini には送らない
   conditions: FamilyAnswer<Presence>; // 持病。Gemini には送らない
   age: FamilyAnswer<string>; // 年齢（歳）。入力した文字のまま持つ。Gemini には送らない
+  sex: FamilyAnswer<Sex>; // 性別。選ばなくても進める。Gemini には送らない
+  height: FamilyAnswer<string>; // 身長（cm）。入力した文字のまま持つ。Gemini には送らない
   weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
 };
 
@@ -56,14 +59,17 @@ export type IntakeState = {
   step:
     | "welcome"
     | "ability"
-    | "patientBody"
     | "patientFeeling"
+    | "patientBody"
     | "patientDiscomfort"
+    | "patientBreak" // こどもの区切り（おつかれさま）
+    | "familyProfile" // 年齢・性別・身長・体重
     | "familyConcern"
     | "familyCondition"
     | "familyHistory"
     | "review"
-    | "doctor";
+    | "doctor"
+    | "end";
   canSelfReport: "able" | "difficult" | null; // null はまだ選んでいない状態
   patient: PatientAnswers;
   family: FamilyAnswers;

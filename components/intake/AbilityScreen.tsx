@@ -23,16 +23,8 @@ export function AbilityScreen({
   const isDifficult = canSelfReport === "difficult";
 
   return (
+    // 質問と説明は、上の案内ボックスに出す
     <div className="stagger flex flex-1 flex-col gap-6 px-4 py-4">
-      <div>
-        <p className="text-body text-on-surface-variant">
-          保護者の方がお選びください。
-        </p>
-        <h2 className="mt-1 text-headline">
-          お子さんは、自分で答えられそうですか？
-        </h2>
-      </div>
-
       <div className="flex flex-col gap-4">
         <Button
           variant="outlined"

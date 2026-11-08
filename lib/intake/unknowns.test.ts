@@ -32,6 +32,8 @@ const family: FamilyAnswers = {
   allergies: answeredFamily({ kind: "no" }),
   conditions: answeredFamily({ kind: "no" }),
   age: answeredFamily("8"),
+  sex: answeredFamily("女の子"),
+  height: answeredFamily("125"),
   weight: answeredFamily("25"),
 };
 
@@ -60,6 +62,8 @@ describe("「不明」の数え方", () => {
           allergies: unansweredFamily,
           conditions: unansweredFamily,
           age: unansweredFamily,
+          sex: unansweredFamily,
+          height: unansweredFamily,
           weight: unansweredFamily,
         },
       ),
@@ -97,6 +101,8 @@ describe("「不明」の数え方", () => {
           foodIntake: unansweredFamily,
           conditions: unansweredFamily,
           age: unansweredFamily,
+          sex: unansweredFamily,
+          height: unansweredFamily,
           weight: unansweredFamily,
         },
       ),

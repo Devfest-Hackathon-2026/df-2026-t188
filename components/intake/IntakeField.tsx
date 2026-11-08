@@ -9,22 +9,17 @@ import {
 } from "@/components/intake/PictureSelect";
 import { SingleSelect } from "@/components/intake/SingleSelect";
 import { Chip } from "@/components/ui/Chip";
+import { BodyFigure } from "@/components/ui/icons";
 import {
-  BodyFigure,
-  FeelingBreathIcon,
-  FeelingCoughIcon,
-  FeelingFeverIcon,
-  FeelingOtherIcon,
-  FeelingPainIcon,
-  FeelingSickIcon,
-  FeelingTiredIcon,
-} from "@/components/ui/icons";
-import {
+  BODY_PART_DISPLAY,
   BODY_PARTS,
+  FEELING_DISPLAY,
   FEELINGS,
   FOOD_INTAKE_OPTIONS,
   ONSET_OPTIONS,
   type BodyPart,
+  type ChoiceDisplay,
+  type ChoicePicture,
   type Feeling,
 } from "@/lib/intake/options";
 import type {
@@ -40,51 +35,37 @@ export type FamilyFieldKey = keyof FamilyAnswers;
 
 // ---------- こどもの項目 ----------
 
-const PICTURE_CLASS = "h-9 w-9";
+// 絵は lib/intake/options.ts の表で決める（絵文字か体の図）。絵は飾りで、意味は言葉で伝える
+function renderPicture(picture: ChoicePicture): ReactNode {
+  return "emoji" in picture ? (
+    <span aria-hidden="true" className="text-[2.25rem] leading-none">
+      {picture.emoji}
+    </span>
+  ) : (
+    <BodyFigure part={picture.figure} />
+  );
+}
 
-// カードに出す、ひらがなの言葉。記録する値は「頭」などのまま
-const BODY_PART_LABELS: Record<BodyPart, string> = {
-  頭: "あたま",
-  耳: "みみ",
-  のど: "のど",
-  胸: "むね",
-  お腹: "おなか",
-  "手・足": "て あし",
-  その他: "そのほか",
-};
+function toPictureOption<T extends string>(
+  value: T,
+  display: ChoiceDisplay,
+): PictureOption<T> {
+  return {
+    value,
+    label: display.label,
+    picture: renderPicture(display.picture),
+    bare: "figure" in display.picture,
+    color: display.color,
+  };
+}
 
-const BODY_PART_PICTURES: Record<BodyPart, ReactNode> = {
-  頭: <BodyFigure part="head" />,
-  耳: <BodyFigure part="ears" />,
-  のど: <BodyFigure part="throat" />,
-  胸: <BodyFigure part="chest" />,
-  お腹: <BodyFigure part="belly" />,
-  "手・足": <BodyFigure part="limbs" />,
-  その他: <FeelingOtherIcon className={PICTURE_CLASS} />,
-};
+const FEELING_OPTIONS: PictureOption<Feeling>[] = FEELINGS.map((value) =>
+  toPictureOption(value, FEELING_DISPLAY[value]),
+);
 
-const FEELING_PICTURES: Record<Feeling, ReactNode> = {
-  いたい: <FeelingPainIcon className={PICTURE_CLASS} />,
-  きもちわるい: <FeelingSickIcon className={PICTURE_CLASS} />,
-  だるい: <FeelingTiredIcon className={PICTURE_CLASS} />,
-  "いきが くるしい": <FeelingBreathIcon className={PICTURE_CLASS} />,
-  "せきが でる": <FeelingCoughIcon className={PICTURE_CLASS} />,
-  ねつっぽい: <FeelingFeverIcon className={PICTURE_CLASS} />,
-  "そのほか・わからない": <FeelingOtherIcon className={PICTURE_CLASS} />,
-};
-
-const BODY_PART_OPTIONS: PictureOption<BodyPart>[] = BODY_PARTS.map((value) => ({
-  value,
-  label: BODY_PART_LABELS[value],
-  picture: BODY_PART_PICTURES[value],
-  bare: value !== "その他",
-}));
-
-const FEELING_OPTIONS: PictureOption<Feeling>[] = FEELINGS.map((value) => ({
-  value,
-  label: value,
-  picture: FEELING_PICTURES[value],
-}));
+const BODY_PART_OPTIONS: PictureOption<BodyPart>[] = BODY_PARTS.map((value) =>
+  toPictureOption(value, BODY_PART_DISPLAY[value]),
+);
 
 function selectedValues<T>(answer: Answer<T[], "patient">): T[] {
   return answer.status === "answered" ? answer.value : [];
@@ -101,15 +82,17 @@ export function PatientField({
   field,
   answers,
   onChange,
+  labelledBy,
 }: {
   field: PatientFieldKey;
   answers: PatientAnswers;
   onChange: (update: Partial<PatientAnswers>) => void;
+  labelledBy: string; // 質問の見出しの id。選ぶカードのまとまりの名前にする
 }) {
   if (field === "bodyParts") {
     return (
       <PictureSelect
-        legend="どこが へん？"
+        labelledBy={labelledBy}
         options={BODY_PART_OPTIONS}
         selected={selectedValues(answers.bodyParts)}
         onChange={(next) => onChange({ bodyParts: toSelectionAnswer(next) })}
@@ -119,7 +102,7 @@ export function PatientField({
   if (field === "feelings") {
     return (
       <PictureSelect
-        legend="どんな かんじ？"
+        labelledBy={labelledBy}
         options={FEELING_OPTIONS}
         selected={selectedValues(answers.feelings)}
         onChange={(next) => onChange({ feelings: toSelectionAnswer(next) })}
@@ -128,6 +111,7 @@ export function PatientField({
   }
   return (
     <FaceSelect
+      labelledBy={labelledBy}
       selected={
         answers.discomfort.status === "answered"
           ? answers.discomfort.value

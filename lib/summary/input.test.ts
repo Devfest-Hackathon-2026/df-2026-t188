@@ -36,6 +36,8 @@ const family: FamilyAnswers = {
   allergies: answeredFamily({ kind: "yes", text: "架空のアレルギー" }),
   conditions: answeredFamily({ kind: "yes", text: "架空の持病" }),
   age: answeredFamily("8"),
+  sex: answeredFamily("女の子"),
+  height: answeredFamily("125"),
   weight: answeredFamily("25"),
 };
 
@@ -107,6 +109,16 @@ describe("文字の形", () => {
   });
 });
 
+describe("Gemini に送らない項目", () => {
+  test("性別と身長は、送るデータのどこにも入らない", () => {
+    const sent = JSON.stringify(buildSummaryInput(patient, family));
+    assert.equal(sent.includes("女の子"), false);
+    assert.equal(sent.includes("125"), false);
+    assert.equal(sent.includes("sex"), false);
+    assert.equal(sent.includes("height"), false);
+  });
+});
+
 describe("両方とも空かの判定", () => {
   const nothingFamily: FamilyAnswers = {
     chiefConcern: unansweredFamily,
@@ -117,6 +129,8 @@ describe("両方とも空かの判定", () => {
     allergies: unansweredFamily,
     conditions: unansweredFamily,
     age: unansweredFamily,
+    sex: unansweredFamily,
+    height: unansweredFamily,
     weight: unansweredFamily,
   };
 
