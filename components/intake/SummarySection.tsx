@@ -119,21 +119,26 @@ function SummaryText({ text, emptyText }: { text: string; emptyText: string }) {
 }
 
 // 本人と保護者の食い違い。上下に並べて、どちらが正しいかは示さない。
-// 片方の回答がないときは比べていないので、「なし」とは出さない
+// 片方の回答がないときは比べていないので、「なし」とは出さない。
+// 見出しは、何の食い違いかが最初に分かるよう「こどもと保護者の答えの食い違い」にする（小児科の先生の感想から）
+const DISCREPANCY_TITLE = "こどもと保護者の答えの食い違い";
+
 function DiscrepancyBlock({ summary }: { summary: Summary }) {
   if (summary.patientSummary === "" || summary.familySummary === "") {
     return (
       <p className="text-support text-on-surface-variant">
-        食い違い：比べていません（片方の回答がありません）
+        {DISCREPANCY_TITLE}：比べていません（片方の回答がありません）
       </p>
     );
   }
   if (summary.discrepancies.length === 0) {
-    return <p className="text-support text-on-surface-variant">食い違い：なし</p>;
+    return (
+      <p className="text-support text-on-surface-variant">{DISCREPANCY_TITLE}：なし</p>
+    );
   }
   return (
     <div>
-      <h3 className="text-label font-bold">食い違い（AIが見つけたもの）</h3>
+      <h3 className="text-label font-bold">{DISCREPANCY_TITLE}（AIが見つけたもの）</h3>
       <ul className="mt-2 flex flex-col gap-3">
         {summary.discrepancies.map((item, index) => (
           <li key={index} className="break-words whitespace-pre-wrap">
