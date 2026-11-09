@@ -33,6 +33,7 @@ import type {
   FamilyAnswers,
   PatientAnswers,
   Presence,
+  Temperature,
 } from "@/lib/intake/types";
 
 // 「どんな かんじ」は、症状をえらぶ画面（SymptomScreens.tsx）で聞くので、ここには入れない
@@ -132,11 +133,9 @@ export function PatientField({
 
 // ---------- 保護者の項目 ----------
 
-// 整数か小数1桁。値の大きさでは正しいかどうかを判断しない
-const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
 // 年齢は整数、体重は整数か小数1桁。値の大きさでは判断しない
 const AGE_PATTERN = /^[0-9０-９]+$/;
-const WEIGHT_PATTERN = TEMPERATURE_PATTERN;
+const WEIGHT_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
 
 const TEXT_INPUT_CLASS =
   "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface placeholder:text-on-surface-variant focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
@@ -299,115 +298,56 @@ function NumberField({
   );
 }
 
-// 熱。範囲（38℃以上など）か「測っていない」を1つ選び、分かれば数字も入れる。
-// 範囲は Gemini に送らず、数字（と「測っていない」）だけを今どおり送る。
-// 範囲と数字が合わなくても、知らせず、自動で直さない（両方を医師の画面に出す）
+// 熱。範囲（38℃以上など）か「測っていない」を1つ選ぶ。数字の欄はない（体温は来院時に病院で測るため）。
+// 範囲は Gemini に送らず、見直しと医師の画面に言葉で出すだけ。「測っていない」は今どおり送る
 function TemperatureField({
   answer,
   range,
   onChange,
-  onInvalidChange,
   compact,
 }: {
   answer: FamilyAnswers["temperature"];
   range: FamilyAnswers["temperatureRange"];
   onChange: (update: Pick<FamilyAnswers, "temperature" | "temperatureRange">) => void;
-  onInvalidChange?: (isInvalid: boolean) => void;
   compact: boolean;
 }) {
-  const temperature = choiceOf(answer);
   const selectedRange = range ? choiceOf(range) : null;
-  const [text, setText] = useState(
-    temperature?.kind === "measured" ? temperature.celsius : "",
-  );
-  const isNotMeasured = temperature?.kind === "not_measured";
-  const isInvalid = text.trim() !== "" && !TEMPERATURE_PATTERN.test(text.trim());
-  // 数字だけを持つ temperature（範囲を選んでも、数字はそのまま）
-  const numberAnswer = (): FamilyAnswers["temperature"] =>
-    temperature?.kind === "measured"
-      ? answer
-      : { respondent: "family", status: "unanswered" };
+  const isNotMeasured = choiceOf(answer)?.kind === "not_measured";
 
   return (
-    <>
-      <fieldset>
-        <legend className={fieldLabelClass(compact)}>熱</legend>
-        <div className={`flex flex-col ${compact ? "gap-2" : "gap-3"}`}>
-          {TEMPERATURE_RANGES.map((option) => (
-            <Chip
-              key={option}
-              label={option}
-              selected={selectedRange === option}
-              onClick={() =>
-                onChange({
-                  temperatureRange: toChoiceAnswer(selectedRange === option ? null : option),
-                  // 「測っていない」を選んでいたら外す
-                  temperature: numberAnswer(),
-                })
-              }
-              compact={compact}
-            />
-          ))}
+    <fieldset>
+      <legend className={fieldLabelClass(compact)}>熱</legend>
+      <div className={`flex flex-col ${compact ? "gap-2" : "gap-3"}`}>
+        {TEMPERATURE_RANGES.map((option) => (
           <Chip
-            label="測っていない"
-            selected={isNotMeasured}
-            onClick={() => {
-              setText("");
+            key={option}
+            label={option}
+            selected={selectedRange === option}
+            onClick={() =>
               onChange({
-                temperature: toChoiceAnswer(isNotMeasured ? null : { kind: "not_measured" }),
-                temperatureRange: toChoiceAnswer<TemperatureRange>(null),
-              });
-              onInvalidChange?.(false);
-            }}
+                temperatureRange: toChoiceAnswer(selectedRange === option ? null : option),
+                // 「測っていない」を選んでいたら外す
+                temperature: toChoiceAnswer<Temperature>(null),
+              })
+            }
             compact={compact}
           />
-        </div>
-      </fieldset>
-      <label
-        htmlFor="temperature"
-        className={`mt-4 mb-2 block ${compact ? "text-support" : "text-body"}`}
-      >
-        分かれば数字も（任意）
-      </label>
-      <div className="flex items-center gap-2">
-        <input
-          id="temperature"
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          aria-describedby="temperature-hint"
-          aria-invalid={isInvalid}
-          value={text}
-          onChange={(event) => {
-            const next = event.target.value;
-            const trimmed = next.trim();
-            const isValid = TEMPERATURE_PATTERN.test(trimmed);
-            setText(next);
+        ))}
+        <Chip
+          label="測っていない"
+          selected={isNotMeasured}
+          onClick={() =>
             onChange({
-              temperature: toChoiceAnswer(
-                isValid ? { kind: "measured", celsius: trimmed } : null,
+              temperature: toChoiceAnswer<Temperature>(
+                isNotMeasured ? null : { kind: "not_measured" },
               ),
-              temperatureRange: range ?? toChoiceAnswer<TemperatureRange>(null),
-            });
-            onInvalidChange?.(trimmed !== "" && !isValid);
-          }}
-          className={`${textInputClass(compact)} ${compact ? "max-w-32" : "max-w-40"} ${
-            isInvalid ? "border-caution" : ""
-          }`}
+              temperatureRange: toChoiceAnswer<TemperatureRange>(null),
+            })
+          }
+          compact={compact}
         />
-        <span className={compact ? "text-label" : "text-title"}>℃</span>
       </div>
-      <p
-        id="temperature-hint"
-        className={`mt-2 text-support ${
-          isInvalid ? "font-bold text-caution" : "text-on-surface-variant"
-        }`}
-      >
-        {isInvalid
-          ? "数字で入れてください（例：37.5）。このままでは記録されません。"
-          : "例：37.5 または 38"}
-      </p>
-    </>
+    </fieldset>
   );
 }
 
@@ -498,7 +438,6 @@ export function FamilyField({
           answer={answers.temperature}
           range={answers.temperatureRange}
           onChange={(update) => onChange(update)}
-          onInvalidChange={onInvalidChange}
           compact={compact}
         />
       );

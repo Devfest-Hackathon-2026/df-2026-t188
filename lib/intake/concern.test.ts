@@ -11,7 +11,7 @@ import {
 } from "@/lib/intake/concern";
 import { TEMPERATURE_RANGES, type TemperatureRange } from "@/lib/intake/options";
 import type { FamilyAnswers } from "@/lib/intake/types";
-import { buildFamilyRows } from "@/lib/intake/unknowns";
+import { buildFamilyRows, getUnknownRows } from "@/lib/intake/unknowns";
 import { buildSummaryInput } from "@/lib/summary/input";
 import { countChars, SUMMARY_TEXT_LIMIT } from "@/lib/summary/types";
 import { parseSummaryInput } from "@/lib/summary/validate";
@@ -120,6 +120,8 @@ describe("体温の範囲（Gemini には送らず、医師の画面に言葉で
       chiefConcern: answered("架空の文"),
     };
     assert.equal(rowOf(answers)?.text, "38℃以上");
+    assert.equal(rowOf(answers)?.state, "answered");
+    assert.equal(getUnknownRows(patient, answers).some((row) => row.key === "temperature"), false);
     assert.equal(buildSummaryInput(patient, answers).family.temperature, undefined);
   });
 

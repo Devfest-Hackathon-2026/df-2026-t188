@@ -61,7 +61,7 @@ export const FOOD_INTAKE_OPTIONS = [
 ] as const;
 
 // 体温の範囲（保護者が選ぶ。Gemini には送らず、見直しと医師の画面に言葉で出す）。
-// 「分かれば数字も」の数字があるときだけ、今どおり数字を Gemini に送る。
+// 数字の欄はない（体温は来院時に病院で測るため）。
 // 「測っていない」は今どおり temperature の not_measured として扱う（Gemini に送る）
 export const TEMPERATURE_RANGES = [
   "38℃以上",

@@ -20,7 +20,7 @@ import type { PatientSymptoms } from "@/lib/intake/symptoms";
 type ReviewScreenProps = {
   canSelfReport: IntakeState["canSelfReport"];
   patient: PatientAnswers;
-  symptoms: PatientSymptoms; // こどもの主症状と詳しい答え（言葉で出すだけ。Gemini には送らない）
+  symptoms: PatientSymptoms; // こどもの主症状と「ほかに きになること」（言葉で出すだけ。Gemini には送らない）
   family: FamilyAnswers;
   onEdit: (target: EditTarget) => void;
   // こどもの最初の画面（「難しい」のときは最初の質問）に戻る。入力した内容は消さない
@@ -50,9 +50,10 @@ const ITEM_TITLES: Record<string, string> = {
   age: "年齢",
   sex: "性別",
   weight: "体重",
+  otherSymptoms: "ほかに きになること",
 };
 
-// 表にない項目（主症状ごとの詳しい答えなど）は、行の名前から「（本人が選んだもの）」を外して使う
+// 表にない項目は、行の名前から「（本人が選んだもの）」を外して使う
 function itemTitle(row: AnswerRow): string {
   return ITEM_TITLES[row.key] ?? row.label.replace("（本人が選んだもの）", "");
 }

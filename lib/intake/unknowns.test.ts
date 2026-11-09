@@ -163,10 +163,10 @@ describe("薬・アレルギーの ⚠ の行", () => {
 });
 
 describe("見直しと医師の画面の行", () => {
-  test("こどもの行は、入力の順（どんなかんじ → へんなところ → つらさ）", () => {
+  test("こどもの行は、入力の順（どんなかんじ → つらさ → へんなところ → ほかに きになること）", () => {
     assert.deepEqual(
-      buildPatientRows(patient).map((row) => row.key),
-      ["feelings", "bodyParts", "discomfort"],
+      buildPatientRows(patient, { ...EMPTY_SYMPTOMS, otherGate: "ない" }).map((row) => row.key),
+      ["feelings", "discomfort", "bodyParts", "otherSymptoms"],
     );
   });
 
@@ -196,7 +196,7 @@ describe("見直しと医師の画面の行", () => {
   });
 });
 
-describe("こどもの主症状と詳しい答えの行（Gemini には送らず、言葉で出すだけ）", () => {
+describe("こどもの主症状と「ほかに きになること」の行（Gemini には送らず、言葉で出すだけ）", () => {
   test("主症状は、送らないもの（かぜっぽい、そのほか、わからない）も画面の言葉で出す", () => {
     const rows = buildPatientRows(patient, {
       ...EMPTY_SYMPTOMS,
@@ -205,19 +205,9 @@ describe("こどもの主症状と詳しい答えの行（Gemini には送らず
     assert.equal(rows[0].text, "かぜっぽい、いたい、そのほか");
   });
 
-  test("詳しい答えは、主症状の画面の順に「『〇〇』について」の行で出す。答えがない主症状は行にしない", () => {
-    const rows = buildPatientRows(patient, {
-      categories: ["cough", "pain", "sick"],
-      details: { cough: ["たんがからむ"], pain: ["ズキズキ", "重たい"] },
-      otherGate: null,
-      other: [],
-    });
-    assert.deepEqual(
-      rows.map((row) => row.key),
-      ["feelings", "detail-pain", "detail-cough", "bodyParts", "discomfort"],
-    );
-    assert.equal(rows[1].label, "「いたい」について（本人が選んだもの）");
-    assert.equal(rows[1].text, "ズキズキ、重たい");
+  test("詳しい答えの行はない。「ほかに きになること」に答えていなければ行にしない", () => {
+    const rows = buildPatientRows(patient, { ...EMPTY_SYMPTOMS, categories: ["pain", "cough"] });
+    assert.deepEqual(rows.map((row) => row.key), ["feelings", "discomfort", "bodyParts"]);
   });
 
   test("ほかに きになること：ある＋選んだもの、ない、わからない を分けて出す", () => {
@@ -230,10 +220,9 @@ describe("こどもの主症状と詳しい答えの行（Gemini には送らず
     assert.equal(row("わからない")?.state, "dont_know");
   });
 
-  test("詳しい答えの行は任意なので、不明に数えない", () => {
+  test("「ほかに きになること」の行は任意なので、不明に数えない", () => {
     const rows = buildPatientRows(patient, {
       categories: ["pain"],
-      details: { pain: ["わからない"] },
       otherGate: "わからない",
       other: [],
     });

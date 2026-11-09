@@ -31,7 +31,7 @@ const context = (change: Partial<GuideContext> = {}): GuideContext => ({
   patient,
   family,
   symptoms: EMPTY_SYMPTOMS,
-  detailReaction: null,
+  otherReaction: null,
   ...change,
 });
 
@@ -67,16 +67,9 @@ describe("症状をえらぶ画面の案内（症状画面.html のとおり）"
   });
 });
 
-describe("症状をくわしく画面の案内（症状画面.html のとおり）", () => {
-  test("主症状の画面の見出しは「『〇〇』について」、返事は「わかるところだけで だいじょうぶ。」", () => {
-    const guide = guideFor("patientDetail1", withCategories(["cough", "pain"]));
-    assert.equal(guide?.title, "「いたい」について");
-    assert.equal(guide?.pose, "listen");
-    assert.equal(guide?.reaction, "わかるところだけで だいじょうぶ。");
-  });
-
-  test("最後の画面は「ほかにも きになることは ある？」で、think と「ほかにも あれば おしえてね。」", () => {
-    const guide = guideFor("patientDetail3", withCategories(["cough", "pain"]));
+describe("「ほかにも きになることは ある？」の案内（症状画面.html のとおり）", () => {
+  test("見出しは「ほかにも きになることは ある？」で、think と「ほかにも あれば おしえてね。」", () => {
+    const guide = guideFor("patientOther", withCategories(["cough", "pain"]));
     assert.equal(guide?.title, "ほかにも きになることは ある？");
     assert.equal(guide?.pose, "think");
     assert.equal(guide?.reaction, "ほかにも あれば おしえてね。");
@@ -84,10 +77,10 @@ describe("症状をくわしく画面の案内（症状画面.html のとおり�
 
   test("押したあとは、わからない なら think、ほかは listen と「えらびなおすことも できるよ。」", () => {
     assert.equal(
-      guideFor("patientDetail1", { ...withCategories(["pain"]), detailReaction: "dontKnow" })?.reaction,
+      guideFor("patientOther", context({ otherReaction: "dontKnow" }))?.reaction,
       "わからなくても だいじょうぶだよ。",
     );
-    const picked = guideFor("patientDetail1", { ...withCategories(["pain"]), detailReaction: "pick" });
+    const picked = guideFor("patientOther", context({ otherReaction: "pick" }));
     assert.equal(picked?.pose, "listen");
     assert.equal(picked?.reaction, "えらびなおすことも できるよ。");
   });

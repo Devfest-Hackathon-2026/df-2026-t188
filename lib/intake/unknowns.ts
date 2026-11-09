@@ -3,7 +3,6 @@
 import { concernText } from "./concern";
 import { discomfortText } from "./options";
 import {
-  DETAIL_PHASE_ORDER,
   EMPTY_SYMPTOMS,
   SYMPTOM_CATEGORIES,
   type PatientSymptoms,
@@ -65,7 +64,8 @@ function concernRow(family: FamilyAnswers): Pick<AnswerRow, "state" | "text"> {
   return text === null ? { state: "unanswered", text: "" } : { state: "answered", text };
 }
 
-// 熱の行。範囲（38℃以上など）と、分かれば数字。「測っていない」はそのまま
+// 熱の行。範囲（38℃以上など）を言葉で出す。「測っていない」はそのまま。
+// 画面には数字の欄がないが、数字が入っていたら（テストなど）数字も出す
 function temperatureRow(family: FamilyAnswers): Pick<AnswerRow, "state" | "text"> {
   const range =
     family.temperatureRange?.status === "answered" ? family.temperatureRange.value : null;
@@ -96,56 +96,44 @@ function feelingsRow(patient: PatientAnswers, symptoms: PatientSymptoms): Answer
   };
 }
 
-// 詳しい答えと、ほかに きになること。Gemini には送らず、見直しと医師の画面に言葉で出すだけ。
-// 答えがある項目だけ行にする
-function symptomDetailRows(symptoms: PatientSymptoms): AnswerRow[] {
-  const rows: AnswerRow[] = DETAIL_PHASE_ORDER.flatMap((key) => {
-    const values = symptoms.details[key] ?? [];
-    if (!symptoms.categories.includes(key) || values.length === 0) return [];
-    const isDontKnow = values.every((value) => value === DONT_KNOW);
-    return [
-      {
-        key: `detail-${key}`,
-        respondent: "patient",
-        label: `「${SYMPTOM_CATEGORIES[key].label}」について（本人が選んだもの）`,
-        required: false,
-        state: isDontKnow ? "dont_know" : "answered",
-        text: isDontKnow ? "" : joinList(values),
-      },
-    ];
-  });
-  if (symptoms.otherGate !== null) {
-    const base = {
-      key: "otherSymptoms",
-      respondent: "patient" as const,
-      label: "ほかに きになること（本人が選んだもの）",
-      required: false,
-    };
-    if (symptoms.otherGate === "わからない") {
-      rows.push({ ...base, state: "dont_know", text: "" });
-    } else if (symptoms.otherGate === "ない") {
-      rows.push({ ...base, state: "answered", text: "ない（と回答）" });
-    } else {
-      rows.push({
-        ...base,
-        state: "answered",
-        text:
-          symptoms.other.length > 0
-            ? joinList(symptoms.other)
-            : "ある（どれかは えらんでいない）",
-      });
-    }
-  }
-  return rows;
+// ほかに きになること。Gemini には送らず、見直しと医師の画面に言葉で出すだけ。
+// 答えたときだけ行にする
+function otherSymptomsRows(symptoms: PatientSymptoms): AnswerRow[] {
+  if (symptoms.otherGate === null) return [];
+  const base = {
+    key: "otherSymptoms",
+    respondent: "patient" as const,
+    label: "ほかに きになること（本人が選んだもの）",
+    required: false,
+  };
+  if (symptoms.otherGate === "わからない") return [{ ...base, state: "dont_know", text: "" }];
+  if (symptoms.otherGate === "ない") return [{ ...base, state: "answered", text: "ない（と回答）" }];
+  return [
+    {
+      ...base,
+      state: "answered",
+      text:
+        symptoms.other.length > 0
+          ? joinList(symptoms.other)
+          : "ある（どれかは えらんでいない）",
+    },
+  ];
 }
 
 export function buildPatientRows(
   patient: PatientAnswers,
   symptoms: PatientSymptoms = EMPTY_SYMPTOMS,
 ): AnswerRow[] {
+  // 入力の順（どんなかんじ → つらさ → へんなところ → ほかに きになること）
   return [
     feelingsRow(patient, symptoms),
-    ...symptomDetailRows(symptoms),
+    {
+      key: "discomfort",
+      respondent: "patient",
+      label: "つらさ（本人が選んだもの）",
+      required: true,
+      ...describe(patient.discomfort, neverDontKnow, discomfortText),
+    },
     {
       key: "bodyParts",
       respondent: "patient",
@@ -154,13 +142,7 @@ export function buildPatientRows(
       required: false,
       ...describe(patient.bodyParts, neverDontKnow, joinList),
     },
-    {
-      key: "discomfort",
-      respondent: "patient",
-      label: "つらさ（本人が選んだもの）",
-      required: true,
-      ...describe(patient.discomfort, neverDontKnow, discomfortText),
-    },
+    ...otherSymptomsRows(symptoms),
   ];
 }
 
@@ -207,7 +189,7 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       respondent: "family",
       label: "熱",
       required: false,
-      // 範囲と数字の両方を、入力どおりに出す（合わなくても直さない）。Gemini に送るのは数字だけ
+      // 範囲を言葉で出す（任意なので「不明」に数えない）。範囲は Gemini に送らない
       ...temperatureRow(family),
     },
     {

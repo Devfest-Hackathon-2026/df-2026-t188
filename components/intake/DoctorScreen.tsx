@@ -32,7 +32,7 @@ import { buildSummaryInput } from "@/lib/summary/input";
 type DoctorScreenProps = {
   canSelfReport: IntakeState["canSelfReport"];
   patient: PatientAnswers;
-  symptoms: PatientSymptoms; // こどもの主症状と詳しい答え（言葉で出すだけ。Gemini には送らない）
+  symptoms: PatientSymptoms; // こどもの主症状と「ほかに きになること」（言葉で出すだけ。Gemini には送らない）
   family: FamilyAnswers;
   summaryCache: SummaryCache | null;
   onSummaryReady: (cache: SummaryCache) => void;

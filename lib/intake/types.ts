@@ -52,7 +52,8 @@ export type FamilyAnswers = {
   // lib/summary のテストの回答の例を変えずに済むよう、項目は任意にしている（ないときは未回答と同じ）
   concernChoices?: FamilyAnswer<ConcernChoice[]>;
   onset: FamilyAnswer<Onset>; // いつから
-  // 体温の数字（「分かれば数字も」）または「測っていない」。これだけを Gemini に送る
+  // 体温の数字または「測っていない」。これだけを Gemini に送る。
+  // 画面には数字の欄がないので、画面から入るのは「測っていない」だけ（数字の形は lib/summary に合わせて残している）
   temperature: FamilyAnswer<Temperature>;
   // 体温の範囲（38℃以上など）。Gemini には送らず、見直しと医師の画面に言葉で出す。
   // lib/summary のテストの回答の例を変えずに済むよう、項目は任意にしている（ないときは未回答と同じ）
@@ -66,27 +67,15 @@ export type FamilyAnswers = {
   weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
 };
 
-// 詳細の画面の枠。詳細の画面は、選んだ主症状の数（最大5つ）と「そのほか」の1つで、最大6つ。
-// 何番目の画面に、どの主症状を出すかは lib/intake/symptoms.ts の symptomPhases で決める
-export const PATIENT_DETAIL_STEPS = [
-  "patientDetail1",
-  "patientDetail2",
-  "patientDetail3",
-  "patientDetail4",
-  "patientDetail5",
-  "patientDetail6",
-] as const;
-
-export type PatientDetailStep = (typeof PATIENT_DETAIL_STEPS)[number];
-
+// こどもの画面は「主訴 → 程度 → 場所 → そのほか」の順（lib/intake/flow.ts の STEPS）
 export type IntakeState = {
   step:
     | "welcome"
     | "ability"
-    | "patientFeeling" // 症状をえらぶ
-    | PatientDetailStep // 症状をくわしく（選んだ主症状ごとの画面と、最後の「そのほか」）
-    | "patientBody"
-    | "patientDiscomfort"
+    | "patientFeeling" // 主訴：どんなかんじがする？
+    | "patientDiscomfort" // 程度：どれくらい つらい？
+    | "patientBody" // 場所：どこが へん？（「いたい」を選んだときだけ）
+    | "patientOther" // そのほか：ほかにも きになることは ある？
     | "patientBreak" // こどもの区切り（おつかれさま）
     | "familyProfile" // 年齢・性別・体重
     | "familyRecord" // 家族からの記録（保護者から見た気になる症状・いつから・熱・食べる飲む・持病・アレルギー・薬を1ページで）
@@ -95,7 +84,7 @@ export type IntakeState = {
     | "end";
   canSelfReport: "able" | "difficult" | null; // null はまだ選んでいない状態
   patient: PatientAnswers;
-  // こどもが選んだ主症状と詳しい答え。Gemini には送らない（送る主症状は patient.feelings に入れる）
+  // こどもが選んだ主症状と「ほかに きになること」。Gemini には送らない（送る主症状は patient.feelings に入れる）
   symptoms: PatientSymptoms;
   family: FamilyAnswers;
 };

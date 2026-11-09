@@ -1,10 +1,10 @@
 // 案内ボックスのキャラクターの表情と、決まった文。AI は使わない。
 // 選んだ内容を受けて決まった文を返すだけで、症状を判断したり、診断したりしない
-import { detailNumber, type Step } from "./flow";
+import type { Step } from "./flow";
 import { BODY_PART_DISPLAY, DISCOMFORT_LABELS } from "./options";
 import {
+  OTHER_QUESTION,
   SYMPTOM_CATEGORIES,
-  symptomPhases,
   type PatientSymptoms,
 } from "./symptoms";
 import type { FamilyAnswers, PatientAnswers } from "./types";
@@ -25,15 +25,15 @@ export type Guide = {
   reaction: string; // 選んだ内容への短い返事。なければ空
 };
 
-// 詳細の画面で、最後に押したもの。HTML では、押したボタンで返事を変える
+// 「ほかにも きになることは ある？」の画面で、最後に押したもの。HTML では、押したボタンで返事を変える
 // （「わからない」なら think と「わからなくても だいじょうぶだよ。」、ほかは listen と「えらびなおすことも できるよ。」）
-export type DetailReaction = "pick" | "dontKnow" | null;
+export type OtherReaction = "pick" | "dontKnow" | null;
 
 export type GuideContext = {
   patient: PatientAnswers;
   family: FamilyAnswers;
   symptoms: PatientSymptoms;
-  detailReaction: DetailReaction;
+  otherReaction: OtherReaction;
 };
 
 // 保護者の画面ごとに、答えたかを見る項目
@@ -64,7 +64,7 @@ const FAMILY_TEXT: Partial<Record<Step, { title: string; description: string }>>
   },
 };
 
-// ここから下の「症状をえらぶ」「症状をくわしく」の文は、
+// ここから下の「症状をえらぶ」「ほかにも きになることは ある？」の文は、
 // かずまさんの v3 の症状画面.html（updateMascotForStep と、ボタンを押したときの setGuide）のとおり
 function chooseSymptomsGuide(symptoms: PatientSymptoms): Guide {
   const title = "どんなかんじがする？";
@@ -85,30 +85,20 @@ function chooseSymptomsGuide(symptoms: PatientSymptoms): Guide {
   };
 }
 
-// 詳細の画面の説明（HTML の画面2の headline-desc）
-export const SYMPTOM_DETAIL_DESCRIPTION =
+// 「ほかにも きになることは ある？」の画面の説明（HTML の画面2の headline-desc）
+export const OTHER_DESCRIPTION =
   "わかるところだけで大丈夫。あてはまるものをえらんでね。";
 
-function symptomDetailGuide(
-  number: number,
-  symptoms: PatientSymptoms,
-  reaction: DetailReaction,
-): Guide {
-  const phase = symptomPhases(symptoms)[number - 1] ?? "other";
-  const isLast = phase === "other";
-  const title = isLast
-    ? "ほかにも きになることは ある？"
-    : `「${SYMPTOM_CATEGORIES[phase].label}」について`;
-  const description = SYMPTOM_DETAIL_DESCRIPTION;
+function otherGuide(reaction: OtherReaction): Guide {
+  const title = OTHER_QUESTION;
+  const description = OTHER_DESCRIPTION;
   if (reaction === "dontKnow") {
     return { pose: "think", title, description, reaction: "わからなくても だいじょうぶだよ。" };
   }
   if (reaction === "pick") {
     return { pose: "listen", title, description, reaction: "えらびなおすことも できるよ。" };
   }
-  return isLast
-    ? { pose: "think", title, description, reaction: "ほかにも あれば おしえてね。" }
-    : { pose: "listen", title, description, reaction: "わかるところだけで だいじょうぶ。" };
+  return { pose: "think", title, description, reaction: "ほかにも あれば おしえてね。" };
 }
 
 // 選んだ順に並んでいるので、最後が一番新しく選んだもの
@@ -126,10 +116,8 @@ function selectionGuide(title: string, label: string | null): Guide {
 
 export function guideFor(
   step: Step,
-  { patient, family, symptoms, detailReaction }: GuideContext,
+  { patient, family, symptoms, otherReaction }: GuideContext,
 ): Guide | null {
-  const number = detailNumber(step);
-  if (number > 0) return symptomDetailGuide(number, symptoms, detailReaction);
   switch (step) {
     case "ability":
       return {
@@ -156,6 +144,8 @@ export function guideFor(
           }
         : { pose: "empathy", title, description, reaction: "" };
     }
+    case "patientOther":
+      return otherGuide(otherReaction);
     case "familyProfile":
     case "familyRecord": {
       // 保護者の画面は、表情だけを変えて返事は出さない。

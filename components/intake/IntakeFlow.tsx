@@ -14,7 +14,7 @@ import {
 import { MascotGuide } from "@/components/intake/MascotGuide";
 import {
   ChooseSymptomsScreen,
-  SymptomDetailScreen,
+  OtherSymptomsScreen,
 } from "@/components/intake/SymptomScreens";
 import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
@@ -25,7 +25,6 @@ import { WelcomeScreen } from "@/components/intake/WelcomeScreen";
 import { BackButton } from "@/components/ui/BackButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import {
-  detailNumber,
   flowSteps,
   progressOf,
   stepIndex,
@@ -34,11 +33,10 @@ import {
   type Step,
   type StepGroup,
 } from "@/lib/intake/flow";
-import { guideFor, type DetailReaction } from "@/lib/intake/guide";
+import { guideFor, type OtherReaction } from "@/lib/intake/guide";
 import {
   categoryFeelings,
   EMPTY_SYMPTOMS,
-  symptomPhases,
   type PatientSymptoms,
 } from "@/lib/intake/symptoms";
 import type {
@@ -72,23 +70,19 @@ const FULL_SCREEN_STEPS: readonly Step[] = ["welcome", "patientBreak", "end"];
 
 // 最初の質問の答えを変えたときは、ここまで「通った」扱いに戻す
 const ABILITY_INDEX = stepIndex("ability");
-// 主症状の選び方を変えたときは、詳細の画面の数が変わるので、ここまで「通った」扱いに戻す
+// 主症状の選び方を変えたときは、「どこが へん？」を出すかが変わるので、ここまで「通った」扱いに戻す
 const CHOOSE_SYMPTOMS_INDEX = stepIndex("patientFeeling");
 
 // 回答に加えて、画面の進み具合を持つ（保存はしない）
 type FlowState = IntakeState & {
   reachedIndex: number; // どの画面まで通ったか（STEPS の番号）
   direction: "forward" | "back" | null; // 直前の切り替えの向き。動きの向きに使う
-  detailReaction: DetailReaction; // 詳細の画面で最後に押したもの（キャラクターの返事に使う）
+  otherReaction: OtherReaction; // 「ほかに きになること」で最後に押したもの（キャラクターの返事に使う）
 };
 
-// こどもの答えで変わる画面。詳細の画面の数（選んだ主症状の画面と「そのほか」）と、
-// 「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）
+// こどもの答えで変わる画面。「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）
 function childFlow(state: FlowState): ChildFlow {
-  return {
-    detailCount: symptomPhases(state.symptoms).length,
-    asksBody: state.symptoms.categories.includes("pain"),
-  };
+  return { asksBody: state.symptoms.categories.includes("pain") };
 }
 
 function stepsOf(state: FlowState) {
@@ -142,7 +136,7 @@ function moveTo(state: FlowState, step: Step): FlowState {
     step,
     direction: to === from ? state.direction : to > from ? "forward" : "back",
     reachedIndex: Math.max(state.reachedIndex, to),
-    detailReaction: to === from ? state.detailReaction : null,
+    otherReaction: to === from ? state.otherReaction : null,
   };
 }
 
@@ -175,7 +169,7 @@ function createInitialState(): FlowState {
     family: createUnansweredFamilyAnswers(),
     reachedIndex: 0,
     direction: null,
-    detailReaction: null,
+    otherReaction: null,
   };
 }
 
@@ -293,19 +287,17 @@ export function IntakeFlow() {
     patient: state.patient,
     family: state.family,
     symptoms: state.symptoms,
-    detailReaction: state.detailReaction,
+    otherReaction: state.otherReaction,
   });
-  const detail = detailNumber(state.step);
-  const phases = symptomPhases(state.symptoms);
   const hasHeader = !FULL_SCREEN_STEPS.includes(state.step);
   const patientField = PATIENT_FIELDS[state.step];
   const familyPage = FAMILY_PAGES[state.step];
   const goNext = () => goToStep(nextStep(state));
 
-  // 主症状と詳しい答えを変える。
+  // 主症状と「ほかに きになること」を変える。
   // Gemini に送る主症状（patient.feelings）は、ここで今のサーバーの選択肢に置きかえて入れる。
   // 「いたい」を外したら、部位の答えも消す（部位は「いたい」のときだけ聞き、送る）。
-  // 主症状の選び方が変わったら、詳細の画面の数が変わるので、先の画面は「まだ通っていない」扱いに戻す
+  // 主症状の選び方が変わったら、「どこが へん？」を出すかが変わるので、先の画面は「まだ通っていない」扱いに戻す
   const setSymptoms = (symptoms: PatientSymptoms) =>
     setState((prev) => ({
       ...prev,
@@ -444,15 +436,12 @@ export function IntakeFlow() {
               onNext={goNext}
             />
           )}
-          {detail > 0 && phases[detail - 1] && (
-            <SymptomDetailScreen
-              phase={phases[detail - 1]}
-              number={detail}
-              count={phases.length}
+          {state.step === "patientOther" && (
+            <OtherSymptomsScreen
               symptoms={state.symptoms}
               onChange={(symptoms) => setSymptoms(symptoms)}
-              onReaction={(detailReaction) =>
-                setState((prev) => ({ ...prev, detailReaction }))
+              onReaction={(otherReaction) =>
+                setState((prev) => ({ ...prev, otherReaction }))
               }
               onNext={goNext}
             />
