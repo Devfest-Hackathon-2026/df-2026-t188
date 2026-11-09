@@ -127,7 +127,6 @@ function createUnansweredFamilyAnswers(): FamilyAnswers {
     conditions: { respondent: "family", status: "unanswered" },
     age: { respondent: "family", status: "unanswered" },
     sex: { respondent: "family", status: "unanswered" },
-    height: { respondent: "family", status: "unanswered" },
     weight: { respondent: "family", status: "unanswered" },
   };
 }

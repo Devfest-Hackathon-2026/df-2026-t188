@@ -52,7 +52,6 @@ export type FamilyAnswers = {
   conditions: FamilyAnswer<Presence>; // 持病。Gemini には送らない
   age: FamilyAnswer<string>; // 年齢（歳）。入力した文字のまま持つ。Gemini には送らない
   sex: FamilyAnswer<Sex>; // 性別。選ばなくても進める。Gemini には送らない
-  height: FamilyAnswer<string>; // 身長（cm）。入力した文字のまま持つ。Gemini には送らない
   weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
 };
 

@@ -49,7 +49,6 @@ const ITEM_TITLES: Record<string, string> = {
   conditions: "持病",
   age: "年齢",
   sex: "性別",
-  height: "身長",
   weight: "体重",
 };
 

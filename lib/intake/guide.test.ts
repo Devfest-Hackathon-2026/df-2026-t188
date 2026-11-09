@@ -24,7 +24,6 @@ const family: FamilyAnswers = {
   conditions: unansweredFamily,
   age: unansweredFamily,
   sex: unansweredFamily,
-  height: unansweredFamily,
   weight: unansweredFamily,
 };
 

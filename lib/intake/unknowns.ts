@@ -166,13 +166,6 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       ...describe(family.sex, neverDontKnow, asWritten),
     },
     {
-      key: "height",
-      respondent: "family",
-      label: "身長",
-      required: false,
-      ...describe(family.height, neverDontKnow, (value) => `${value} cm`),
-    },
-    {
       key: "weight",
       respondent: "family",
       label: "体重",

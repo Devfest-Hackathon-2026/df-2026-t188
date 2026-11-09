@@ -37,7 +37,6 @@ const family: FamilyAnswers = {
   conditions: answeredFamily({ kind: "yes", text: "架空の持病" }),
   age: answeredFamily("8"),
   sex: answeredFamily("女の子"),
-  height: answeredFamily("125"),
   weight: answeredFamily("25"),
 };
 
@@ -130,7 +129,6 @@ describe("両方とも空かの判定", () => {
     conditions: unansweredFamily,
     age: unansweredFamily,
     sex: unansweredFamily,
-    height: unansweredFamily,
     weight: unansweredFamily,
   };
 

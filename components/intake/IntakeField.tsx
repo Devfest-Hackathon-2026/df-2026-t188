@@ -130,7 +130,6 @@ const TEMPERATURE_PATTERN = /^[0-9０-９]+([.．][0-9０-９])?$/;
 // 年齢は整数、体重は整数か小数1桁。値の大きさでは判断しない
 const AGE_PATTERN = /^[0-9０-９]+$/;
 const WEIGHT_PATTERN = TEMPERATURE_PATTERN;
-const HEIGHT_PATTERN = TEMPERATURE_PATTERN; // 身長も整数か小数1桁
 
 const TEXT_INPUT_CLASS =
   "w-full rounded-field border border-outline bg-surface-container-lowest p-4 text-body text-on-surface placeholder:text-on-surface-variant focus:outline-2 focus:-outline-offset-1 focus:outline-primary";
@@ -490,21 +489,6 @@ export function FamilyField({
           options={SEX_OPTIONS}
           selected={choiceOf(answers.sex)}
           onChange={(next) => onChange({ sex: toChoiceAnswer(next) })}
-        />
-      );
-    case "height":
-      return (
-        <NumberField
-          id="height"
-          label="身長（任意）"
-          unit="cm"
-          inputMode="decimal"
-          pattern={HEIGHT_PATTERN}
-          placeholder="例：120"
-          errorText="数字で入れてください（例：120.5）。"
-          answer={answers.height}
-          onChange={(next) => onChange({ height: next })}
-          onInvalidChange={onInvalidChange}
         />
       );
     case "weight":

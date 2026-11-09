@@ -10,8 +10,7 @@ export type FamilyPage = "profile" | "record";
 // お子さんのこと。配列は2列に並べる（1つだけなら左半分）
 const PROFILE_FIELDS: (FamilyFieldKey | FamilyFieldKey[])[] = [
   "sex",
-  ["age", "height"],
-  ["weight"],
+  ["age", "weight"],
 ];
 
 // 家族からの記録。1つのカードに、細い線で区切って並べる（かずまさんの v3 のデザインに寄せる）

@@ -39,7 +39,6 @@ const family: FamilyAnswers = {
   conditions: answeredFamily({ kind: "no" }),
   age: answeredFamily("8"),
   sex: answeredFamily("女の子"),
-  height: answeredFamily("125"),
   weight: answeredFamily("25"),
 };
 
@@ -69,7 +68,6 @@ describe("「不明」の数え方", () => {
           conditions: unansweredFamily,
           age: unansweredFamily,
           sex: unansweredFamily,
-          height: unansweredFamily,
           weight: unansweredFamily,
         },
       ),
@@ -108,7 +106,6 @@ describe("「不明」の数え方", () => {
           conditions: unansweredFamily,
           age: unansweredFamily,
           sex: unansweredFamily,
-          height: unansweredFamily,
           weight: unansweredFamily,
         },
       ),
@@ -179,7 +176,6 @@ describe("見直しと医師の画面の行", () => {
       [
         "age",
         "sex",
-        "height",
         "weight",
         "chiefConcern",
         "onset",
@@ -192,12 +188,11 @@ describe("見直しと医師の画面の行", () => {
     );
   });
 
-  test("性別は選んだまま、身長は cm を付けて出す。どちらも任意", () => {
+  test("性別は選んだまま出す。任意。身長の行はない", () => {
     const rows = buildFamilyRows(family);
     const sex = rows.find((row) => row.key === "sex");
-    const height = rows.find((row) => row.key === "height");
     assert.deepEqual([sex?.text, sex?.required], ["女の子", false]);
-    assert.deepEqual([height?.text, height?.required], ["125 cm", false]);
+    assert.equal(rows.some((row) => row.key === "height"), false);
   });
 });
 

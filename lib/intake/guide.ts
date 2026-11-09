@@ -38,7 +38,7 @@ export type GuideContext = {
 
 // 保護者の画面ごとに、答えたかを見る項目
 const FAMILY_PAGE_FIELDS: Partial<Record<Step, (keyof FamilyAnswers)[]>> = {
-  familyProfile: ["age", "sex", "height", "weight"],
+  familyProfile: ["age", "sex", "weight"],
   familyRecord: [
     "chiefConcern",
     "onset",
