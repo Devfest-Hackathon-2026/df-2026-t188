@@ -135,7 +135,8 @@ export function buildPatientRows(
       key: "bodyParts",
       respondent: "patient",
       label: "へんなところ（本人が選んだもの）",
-      required: true,
+      // 部位は、主症状で「いたい」を選んだときだけ聞く（症状画面.html と同じ）ので、任意にする
+      required: false,
       ...describe(patient.bodyParts, neverDontKnow, joinList),
     },
     {

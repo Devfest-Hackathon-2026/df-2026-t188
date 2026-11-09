@@ -42,7 +42,7 @@ export type StepInfo = {
   segment: ProgressSegment | null; // バーのどの区切りか。バーを出さない画面は null
 };
 
-// 画面の順番。こどもは「症状をえらぶ」→「症状をくわしく」（選んだ数だけ）→「どこが へん」→「どれくらい つらい」
+// 画面の順番。こどもは「症状をえらぶ」→「症状をくわしく」（選んだ数だけ）→「どこが へん」（いたい のときだけ）→「どれくらい つらい」
 export const STEPS: readonly StepInfo[] = [
   { key: "welcome", group: "welcome", fullName: "はじめ", segment: null },
   { key: "ability", group: "ability", fullName: "答えられるかの確認", segment: "respondent" },
@@ -76,15 +76,20 @@ export function detailNumber(step: Step): number {
   return (PATIENT_DETAIL_STEPS as readonly string[]).indexOf(step) + 1;
 }
 
+// こどもの答えで変わる画面。
+// detailCount は詳細の画面の数（選んだ主症状の画面と「そのほか」）。
+// asksBody は「どこが へん？」を出すか（症状画面.html と同じく、主症状で「いたい」を選んだときだけ）
+export type ChildFlow = { detailCount: number; asksBody: boolean };
+
 // この流れで通る画面。
-// 最初に「難しい」を選んだときは、本人の画面（区切りも）を飛ばす。
-// 詳細の画面は、detailCount（選んだ主症状の画面と「そのほか」の数）だけ通る
+// 最初に「難しい」を選んだときは、本人の画面（区切りも）を飛ばす
 export function flowSteps(
   canSelfReport: CanSelfReport,
-  detailCount: number,
+  { detailCount, asksBody }: ChildFlow,
 ): readonly StepInfo[] {
   return STEPS.filter((item) => {
     if (canSelfReport === "difficult" && item.group === "patient") return false;
+    if (item.key === "patientBody") return asksBody;
     const number = detailNumber(item.key);
     return number === 0 || number <= detailCount;
   });
@@ -97,7 +102,7 @@ export function flowSteps(
 export function progressOf(
   step: Step,
   canSelfReport: CanSelfReport,
-  detailCount: number,
+  child: ChildFlow,
 ): {
   total: number;
   current: number;
@@ -105,7 +110,7 @@ export function progressOf(
 } | null {
   const segment = stepInfo(step).segment;
   if (segment === null) return null;
-  const steps = flowSteps(canSelfReport, detailCount);
+  const steps = flowSteps(canSelfReport, child);
   const segments = PROGRESS_SEGMENTS.filter((item) =>
     steps.some((info) => info.segment === item),
   );

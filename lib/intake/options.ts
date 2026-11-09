@@ -111,8 +111,8 @@ export const BODY_PART_DISPLAY: Record<BodyPart, ChoiceDisplay> = {
 };
 
 // 「どれくらい つらい？」の顔の画像（public の下）。言葉は DISCOMFORT_LABELS。
-// 素材の表情は4段階と「わからない」なので、5段階目は線が2本の「><」を仮に使う。
-// かずまさんから5段階目の顔が届いたら、5 の画像だけを差し替える
+// 5（すごく つらい）は、かずまさんが追加した口を開けて泣いている顔
+// （.claude/design-ref/v3/character-very-distressed-strong.png を、ほかの顔と同じやり方で縮めたもの）
 export const DISCOMFORT_FACE_SRC: Record<DiscomfortLevel, string> = {
   1: "/mascot/severity/1.webp",
   2: "/mascot/severity/2.webp",

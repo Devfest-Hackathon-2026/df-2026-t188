@@ -30,6 +30,7 @@ import {
   progressOf,
   stepIndex,
   stepInfo,
+  type ChildFlow,
   type Step,
   type StepGroup,
 } from "@/lib/intake/flow";
@@ -81,13 +82,17 @@ type FlowState = IntakeState & {
   detailReaction: DetailReaction; // 詳細の画面で最後に押したもの（キャラクターの返事に使う）
 };
 
-// 詳細の画面の数（選んだ主症状の画面と「そのほか」）
-function detailCount(state: FlowState): number {
-  return symptomPhases(state.symptoms).length;
+// こどもの答えで変わる画面。詳細の画面の数（選んだ主症状の画面と「そのほか」）と、
+// 「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）
+function childFlow(state: FlowState): ChildFlow {
+  return {
+    detailCount: symptomPhases(state.symptoms).length,
+    asksBody: state.symptoms.categories.includes("pain"),
+  };
 }
 
 function stepsOf(state: FlowState) {
-  return flowSteps(state.canSelfReport, detailCount(state));
+  return flowSteps(state.canSelfReport, childFlow(state));
 }
 
 function createUnansweredPatientAnswers(): PatientAnswers {
@@ -282,7 +287,7 @@ export function IntakeFlow() {
   const previous = previousStep(state);
   const group = stepInfo(state.step).group;
   const audience = AUDIENCE[group];
-  const progress = progressOf(state.step, state.canSelfReport, detailCount(state));
+  const progress = progressOf(state.step, state.canSelfReport, childFlow(state));
   const guide = guideFor(state.step, {
     patient: state.patient,
     family: state.family,
@@ -298,6 +303,7 @@ export function IntakeFlow() {
 
   // 主症状と詳しい答えを変える。
   // Gemini に送る主症状（patient.feelings）は、ここで今のサーバーの選択肢に置きかえて入れる。
+  // 「いたい」を外したら、部位の答えも消す（部位は「いたい」のときだけ聞き、送る）。
   // 主症状の選び方が変わったら、詳細の画面の数が変わるので、先の画面は「まだ通っていない」扱いに戻す
   const setSymptoms = (symptoms: PatientSymptoms) =>
     setState((prev) => ({
@@ -306,6 +312,9 @@ export function IntakeFlow() {
       patient: {
         ...prev.patient,
         feelings: toSelectionAnswer(categoryFeelings(symptoms.categories)),
+        bodyParts: symptoms.categories.includes("pain")
+          ? prev.patient.bodyParts
+          : { respondent: "patient", status: "unanswered" },
       },
       reachedIndex:
         symptoms.categories.join() === prev.symptoms.categories.join()

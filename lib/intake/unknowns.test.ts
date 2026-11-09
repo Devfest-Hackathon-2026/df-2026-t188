@@ -51,7 +51,7 @@ describe("「不明」の数え方", () => {
     assert.deepEqual(unknownKeys(patient, family), []);
   });
 
-  test("何も答えないと、必須の5件が不明になる", () => {
+  test("何も答えないと、必須の4件が不明になる（へんなところは「いたい」のときだけ聞くので任意）", () => {
     assert.deepEqual(
       unknownKeys(
         {
@@ -73,14 +73,14 @@ describe("「不明」の数え方", () => {
           weight: unansweredFamily,
         },
       ),
-      ["bodyParts", "discomfort", "onset", "medications", "allergies"],
+      ["discomfort", "onset", "medications", "allergies"],
     );
   });
 
-  test("「難しい」は本人の2件が不明になる", () => {
+  test("「難しい」は本人のつらさ1件が不明になる（へんなところは任意）", () => {
     assert.deepEqual(
       unknownKeys({ bodyParts: unable, feelings: unable, discomfort: unable }, family),
-      ["bodyParts", "discomfort"],
+      ["discomfort"],
     );
   });
 
