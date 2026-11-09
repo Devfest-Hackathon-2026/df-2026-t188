@@ -70,7 +70,7 @@ ChatGPT と Codex（チームメンバーが作成したものを参考・利用
 
 ## 使った AI
 
-Claude Code（モデルは Claude Fable 5.1 と Claude Opus 5.5）。main ブランチの ed26f34 の時点で、全33コミットのうち30コミットに Co-Authored-By がある（Fable 5.1 が13件、Opus 5.5 が17件）
+Claude Code（モデルは Claude Fable 5.1 と Claude Opus 5.5）。main ブランチの d8e4c1c の時点で、全46コミットのうち43コミットに Co-Authored-By がある（Fable 5.1 が13件、Opus 5.5 が30件）
 
 ## なぜその場面か
 

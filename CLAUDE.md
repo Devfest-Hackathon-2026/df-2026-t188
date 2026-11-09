@@ -5,7 +5,7 @@
 ## 技術スタック
 
 - 技術スタックは Next.js ＋ Cloud Run ＋ Vertex AI（Gemini）とする
-- Google 以外のサービス（Vercel、Supabase、OpenAI、Anthropic など）を導入・提案しない
+- Google 以外のサービス（Vercel、Supabase、OpenAI、Anthropic など）を導入・提案しない（アプリに組み込むサービスのこと。開発の道具は除く）
 
 ## 秘密情報
 
