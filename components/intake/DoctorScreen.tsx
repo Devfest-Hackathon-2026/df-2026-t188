@@ -26,6 +26,7 @@ import {
   type SafetyNotice,
 } from "@/lib/intake/unknowns";
 import type { PatientSymptoms } from "@/lib/intake/symptoms";
+import { withComposedConcern } from "@/lib/intake/concern";
 import { buildSummaryInput } from "@/lib/summary/input";
 
 type DoctorScreenProps = {
@@ -84,7 +85,8 @@ export function DoctorScreen({
   ].filter((notice) => notice !== null);
 
   const summaryStatus = useSummary(
-    buildSummaryInput(patient, family),
+    // 保護者から見た気になる症状は、選択肢と自由記載を1つの文にまとめて、今までの自由記載の欄として送る
+    buildSummaryInput(patient, withComposedConcern(family)),
     summaryCache,
     onSummaryReady,
   );

@@ -1,5 +1,6 @@
 // 「不明」の判定と、医師に見せる画面の行づくり。すべてルールで行い、AIは使わない。
 // 回答の内容を解釈したり、ある回答から別の回答を推測したりしない。
+import { concernText } from "./concern";
 import { discomfortText } from "./options";
 import {
   DETAIL_PHASE_ORDER,
@@ -58,6 +59,12 @@ const formatPresence = (value: Presence) => {
   if (value.kind === "dont_know") return "";
   return value.text.trim() === "" ? `あり（${NO_DETAIL}）` : value.text;
 };
+
+// 保護者から見た気になる症状の行。選択肢と自由記載をまとめた文（Gemini に送る文と同じ）を出す
+function concernRow(family: FamilyAnswers): Pick<AnswerRow, "state" | "text"> {
+  const text = concernText(family);
+  return text === null ? { state: "unanswered", text: "" } : { state: "answered", text };
+}
 
 const formatTemperature = (value: Temperature) =>
   value.kind === "measured" ? `${value.celsius} ℃` : "測っていない";
@@ -175,9 +182,10 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
     {
       key: "chiefConcern",
       respondent: "family",
-      label: "一番心配なこと",
+      label: "保護者から見た気になる症状",
       required: false,
-      ...describe(family.chiefConcern, neverDontKnow, asWritten),
+      // 選択肢とその他の自由記載を、送るときと同じ1つの文にまとめて出す
+      ...concernRow(family),
     },
     {
       key: "onset",

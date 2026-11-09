@@ -40,7 +40,7 @@ const ITEM_TITLES: Record<string, string> = {
   bodyParts: "へんなところ",
   feelings: "どんなかんじ",
   discomfort: "つらさ",
-  chiefConcern: "一番心配なこと",
+  chiefConcern: "保護者から見た気になる症状",
   onset: "いつから",
   temperature: "熱",
   foodIntake: "食べる・飲む",

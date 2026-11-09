@@ -119,6 +119,7 @@ function createDifficultPatientAnswers(): PatientAnswers {
 function createUnansweredFamilyAnswers(): FamilyAnswers {
   return {
     chiefConcern: { respondent: "family", status: "unanswered" },
+    concernChoices: { respondent: "family", status: "unanswered" },
     onset: { respondent: "family", status: "unanswered" },
     temperature: { respondent: "family", status: "unanswered" },
     foodIntake: { respondent: "family", status: "unanswered" },

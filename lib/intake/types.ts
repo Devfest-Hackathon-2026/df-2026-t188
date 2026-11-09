@@ -6,6 +6,7 @@ import type {
   Onset,
   Sex,
 } from "./options";
+import type { ConcernChoice } from "./concern";
 import type { PatientSymptoms } from "./symptoms";
 
 // respondent は「誰の欄の回答か」を表す。本人と保護者の回答を型で混ぜないようにする
@@ -43,7 +44,12 @@ export type Presence =
   | { kind: "dont_know" };
 
 export type FamilyAnswers = {
-  chiefConcern: FamilyAnswer<string>; // 一番心配なこと（任意）
+  // 保護者から見た気になる症状の「その他」の自由記載（任意）。
+  // 送るときは、下の選択肢と1つの文にまとめて送る（lib/intake/concern.ts）
+  chiefConcern: FamilyAnswer<string>;
+  // 保護者から見た気になる症状の選択肢（複数）。
+  // lib/summary のテストの回答の例を変えずに済むよう、項目は任意にしている（ないときは未回答と同じ）
+  concernChoices?: FamilyAnswer<ConcernChoice[]>;
   onset: FamilyAnswer<Onset>; // いつから
   temperature: FamilyAnswer<Temperature>;
   foodIntake: FamilyAnswer<FoodIntake>; // 食べる・飲む

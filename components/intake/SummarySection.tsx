@@ -110,6 +110,16 @@ export function useSummary(
 
 const RESPONDENT_LABEL = { patient: "本人", family: "保護者" } as const;
 
+// 文字数の上限を超えた欄の名前は lib/summary/input.ts が決めている（変えない）。
+// 画面の言葉が変わった欄は、ここで今の画面の名前に置きかえて出す
+const OVER_LIMIT_LABELS: Record<string, string> = {
+  一番心配なこと: "保護者から見た気になる症状",
+};
+
+function overLimitLabel(label: string): string {
+  return OVER_LIMIT_LABELS[label] ?? label;
+}
+
 function SummaryText({ text, emptyText }: { text: string; emptyText: string }) {
   return text === "" ? (
     <p className="mt-1 text-body text-on-surface-variant">{emptyText}</p>
@@ -202,7 +212,7 @@ export function SummarySection({ status }: { status: SummaryStatus }) {
           <ul className="mt-2 list-disc pl-6 text-body">
             {status.fields.map((field) => (
               <li key={`${field.respondent}-${field.label}`}>
-                {RESPONDENT_LABEL[field.respondent]}：{field.label}
+                {RESPONDENT_LABEL[field.respondent]}：{overLimitLabel(field.label)}
               </li>
             ))}
           </ul>

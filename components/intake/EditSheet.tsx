@@ -12,6 +12,11 @@ import type { FamilyAnswers } from "@/lib/intake/types";
 // シートで直せるのは、保護者の項目だけ。こどもの項目は「こども」の画面で、お子さんと一緒に直す
 export type EditTarget = { title: string; field: FamilyFieldKey };
 
+// 見直しの「編集」で、押した項目と一緒に保存する項目
+const SAVED_TOGETHER: Partial<Record<FamilyFieldKey, FamilyFieldKey[]>> = {
+  chiefConcern: ["chiefConcern", "concernChoices"],
+};
+
 // 閉じる動きの時間。globals.css の .edit-sheet[data-closing] と合わせる
 const CLOSE_ANIMATION_MS = 180;
 
@@ -135,7 +140,12 @@ export function EditSheet({
         ?.focus();
       return;
     }
-    onSave({ [target.field]: draft[target.field] });
+    // 1つの項目でも、一緒に保存する項目がある（気になる症状は、選択肢とその他の自由記載）
+    onSave(
+      Object.fromEntries(
+        (SAVED_TOGETHER[target.field] ?? [target.field]).map((field) => [field, draft[field]]),
+      ),
+    );
     onRequestClose();
   };
 

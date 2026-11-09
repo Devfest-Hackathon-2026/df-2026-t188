@@ -11,6 +11,11 @@ import { SingleSelect } from "@/components/intake/SingleSelect";
 import { Chip } from "@/components/ui/Chip";
 import { BodyFigure } from "@/components/ui/icons";
 import {
+  composeConcern,
+  CONCERN_CHOICES,
+  type ConcernChoice,
+} from "@/lib/intake/concern";
+import {
   BODY_PART_DISPLAY,
   BODY_PARTS,
   FOOD_INTAKE_OPTIONS,
@@ -384,11 +389,41 @@ export function FamilyField({
 }) {
   switch (field) {
     case "chiefConcern": {
+      // 保護者から見た気になる症状。選択肢（複数）と、その他の自由記載。
+      // 文字数は、送るときにまとめる1つの文で数える（上限 500 文字）
       const text = choiceOf(answers.chiefConcern) ?? "";
+      const choices = answers.concernChoices
+        ? (choiceOf(answers.concernChoices) ?? [])
+        : [];
+      const toggle = (choice: ConcernChoice) => {
+        const next = choices.includes(choice)
+          ? choices.filter((item) => item !== choice)
+          : [...choices, choice];
+        onChange({ concernChoices: toChoiceAnswer(next.length > 0 ? next : null) });
+      };
       return (
         <>
-          <label htmlFor="chief-concern" className={fieldLabelClass(compact)}>
-            一番心配なこと（任意）
+          <fieldset>
+            <legend className={fieldLabelClass(compact)}>
+              保護者から見た気になる症状（任意。いくつでも）
+            </legend>
+            <div className={`flex flex-col ${compact ? "gap-2" : "gap-3"}`}>
+              {CONCERN_CHOICES.map((choice) => (
+                <Chip
+                  key={choice}
+                  label={choice}
+                  selected={choices.includes(choice)}
+                  onClick={() => toggle(choice)}
+                  compact={compact}
+                />
+              ))}
+            </div>
+          </fieldset>
+          <label
+            htmlFor="chief-concern"
+            className={`mt-4 mb-2 block ${compact ? "text-support" : "text-body"}`}
+          >
+            その他（書かなくても大丈夫です）
           </label>
           <textarea
             id="chief-concern"
@@ -404,7 +439,7 @@ export function FamilyField({
             }
             className={textInputClass(compact)}
           />
-          <CharCount text={text} />
+          <CharCount text={composeConcern(choices, text) ?? ""} />
         </>
       );
     }

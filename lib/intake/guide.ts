@@ -41,6 +41,7 @@ const FAMILY_PAGE_FIELDS: Partial<Record<Step, (keyof FamilyAnswers)[]>> = {
   familyProfile: ["age", "sex", "weight"],
   familyRecord: [
     "chiefConcern",
+    "concernChoices",
     "onset",
     "temperature",
     "foodIntake",
@@ -160,7 +161,7 @@ export function guideFor(
       // 返事は説明と入れ替わるので、「任意です」などの説明を消さないため
       const text = FAMILY_TEXT[step]!;
       const hasAnswer = FAMILY_PAGE_FIELDS[step]!.some(
-        (field) => family[field].status === "answered",
+        (field) => family[field]?.status === "answered",
       );
       return { pose: hasAnswer ? "listen" : "calm", ...text, reaction: "" };
     }
