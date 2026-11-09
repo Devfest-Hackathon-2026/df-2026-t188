@@ -64,7 +64,7 @@ export function ChooseSymptomsScreen({
         </p>
       </div>
       <BottomBar>
-        <Button onClick={onNext}>次へ進む</Button>
+        <Button onClick={onNext}>つぎへ すすむ</Button>
       </BottomBar>
     </>
   );
