@@ -87,7 +87,7 @@ function chooseSymptomsGuide(symptoms: PatientSymptoms): Guide {
 
 // 「ほかにも きになることは ある？」の画面の説明（HTML の画面2の headline-desc）
 export const OTHER_DESCRIPTION =
-  "わかるところだけで大丈夫。あてはまるものをえらんでね。";
+  "わかるところだけでだいじょうぶ。あてはまるものをえらんでね。";
 
 function otherGuide(reaction: OtherReaction): Guide {
   const title = OTHER_QUESTION;
