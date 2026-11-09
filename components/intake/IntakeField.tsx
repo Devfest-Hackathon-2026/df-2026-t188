@@ -489,6 +489,7 @@ export function FamilyField({
           options={SEX_OPTIONS}
           selected={choiceOf(answers.sex)}
           onChange={(next) => onChange({ sex: toChoiceAnswer(next) })}
+          layout="row"
         />
       );
     case "weight":

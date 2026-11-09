@@ -8,14 +8,6 @@ type ChipProps = {
   compact?: boolean; // 小さい表示（保護者の1ページで使う）。押せる高さは 44px を保つ
 };
 
-// 2列に並べるとき、この文字数以上の選択肢は横いっぱいの幅にする。
-// 右の丸いチェックと文字が重ならないようにするため
-const WIDE_CHIP_LABEL_LENGTH = 6;
-
-export function chipSpanClass(label: string): string {
-  return label.length >= WIDE_CHIP_LABEL_LENGTH ? "col-span-2" : "";
-}
-
 // 選んだときの色の層。背景が淡い青、枠が青になる。
 // 色を直接変えず、この層の透明度を変える（globals.css の .chip-layer）
 export function SelectedLayer({ rounded }: { rounded: string }) {
