@@ -44,6 +44,7 @@ const FAMILY_PAGE_FIELDS: Partial<Record<Step, (keyof FamilyAnswers)[]>> = {
     "concernChoices",
     "onset",
     "temperature",
+    "temperatureRange",
     "foodIntake",
     "conditions",
     "allergies",

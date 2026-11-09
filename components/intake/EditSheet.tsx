@@ -15,6 +15,7 @@ export type EditTarget = { title: string; field: FamilyFieldKey };
 // 見直しの「編集」で、押した項目と一緒に保存する項目
 const SAVED_TOGETHER: Partial<Record<FamilyFieldKey, FamilyFieldKey[]>> = {
   chiefConcern: ["chiefConcern", "concernChoices"],
+  temperature: ["temperature", "temperatureRange"],
 };
 
 // 閉じる動きの時間。globals.css の .edit-sheet[data-closing] と合わせる

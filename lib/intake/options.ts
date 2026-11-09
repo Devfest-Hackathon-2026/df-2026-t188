@@ -60,6 +60,18 @@ export const FOOD_INTAKE_OPTIONS = [
   "ほとんどない",
 ] as const;
 
+// 体温の範囲（保護者が選ぶ。Gemini には送らず、見直しと医師の画面に言葉で出す）。
+// 「分かれば数字も」の数字があるときだけ、今どおり数字を Gemini に送る。
+// 「測っていない」は今どおり temperature の not_measured として扱う（Gemini に送る）
+export const TEMPERATURE_RANGES = [
+  "38℃以上",
+  "37〜38℃未満",
+  "36〜37℃未満",
+  "36℃未満",
+] as const;
+
+export type TemperatureRange = (typeof TEMPERATURE_RANGES)[number];
+
 // 性別（保護者が任意で選ぶ。Gemini には送らない）
 export const SEX_OPTIONS = ["男の子", "女の子"] as const;
 

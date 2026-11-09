@@ -21,6 +21,8 @@ import {
   FOOD_INTAKE_OPTIONS,
   ONSET_OPTIONS,
   SEX_OPTIONS,
+  TEMPERATURE_RANGES,
+  type TemperatureRange,
   type BodyPart,
   type ChoiceDisplay,
   type ChoicePicture,
@@ -297,28 +299,75 @@ function NumberField({
   );
 }
 
+// 熱。範囲（38℃以上など）か「測っていない」を1つ選び、分かれば数字も入れる。
+// 範囲は Gemini に送らず、数字（と「測っていない」）だけを今どおり送る。
+// 範囲と数字が合わなくても、知らせず、自動で直さない（両方を医師の画面に出す）
 function TemperatureField({
   answer,
+  range,
   onChange,
   onInvalidChange,
   compact,
 }: {
   answer: FamilyAnswers["temperature"];
-  onChange: (next: FamilyAnswers["temperature"]) => void;
+  range: FamilyAnswers["temperatureRange"];
+  onChange: (update: Pick<FamilyAnswers, "temperature" | "temperatureRange">) => void;
   onInvalidChange?: (isInvalid: boolean) => void;
   compact: boolean;
 }) {
   const temperature = choiceOf(answer);
+  const selectedRange = range ? choiceOf(range) : null;
   const [text, setText] = useState(
     temperature?.kind === "measured" ? temperature.celsius : "",
   );
   const isNotMeasured = temperature?.kind === "not_measured";
   const isInvalid = text.trim() !== "" && !TEMPERATURE_PATTERN.test(text.trim());
+  // 数字だけを持つ temperature（範囲を選んでも、数字はそのまま）
+  const numberAnswer = (): FamilyAnswers["temperature"] =>
+    temperature?.kind === "measured"
+      ? answer
+      : { respondent: "family", status: "unanswered" };
 
   return (
     <>
-      <label htmlFor="temperature" className={fieldLabelClass(compact)}>
-        熱
+      <fieldset>
+        <legend className={fieldLabelClass(compact)}>熱</legend>
+        <div className={`flex flex-col ${compact ? "gap-2" : "gap-3"}`}>
+          {TEMPERATURE_RANGES.map((option) => (
+            <Chip
+              key={option}
+              label={option}
+              selected={selectedRange === option}
+              onClick={() =>
+                onChange({
+                  temperatureRange: toChoiceAnswer(selectedRange === option ? null : option),
+                  // 「測っていない」を選んでいたら外す
+                  temperature: numberAnswer(),
+                })
+              }
+              compact={compact}
+            />
+          ))}
+          <Chip
+            label="測っていない"
+            selected={isNotMeasured}
+            onClick={() => {
+              setText("");
+              onChange({
+                temperature: toChoiceAnswer(isNotMeasured ? null : { kind: "not_measured" }),
+                temperatureRange: toChoiceAnswer<TemperatureRange>(null),
+              });
+              onInvalidChange?.(false);
+            }}
+            compact={compact}
+          />
+        </div>
+      </fieldset>
+      <label
+        htmlFor="temperature"
+        className={`mt-4 mb-2 block ${compact ? "text-support" : "text-body"}`}
+      >
+        分かれば数字も（任意）
       </label>
       <div className="flex items-center gap-2">
         <input
@@ -334,11 +383,12 @@ function TemperatureField({
             const trimmed = next.trim();
             const isValid = TEMPERATURE_PATTERN.test(trimmed);
             setText(next);
-            onChange(
-              toChoiceAnswer(
+            onChange({
+              temperature: toChoiceAnswer(
                 isValid ? { kind: "measured", celsius: trimmed } : null,
               ),
-            );
+              temperatureRange: range ?? toChoiceAnswer<TemperatureRange>(null),
+            });
             onInvalidChange?.(trimmed !== "" && !isValid);
           }}
           className={`${textInputClass(compact)} ${compact ? "max-w-32" : "max-w-40"} ${
@@ -357,17 +407,6 @@ function TemperatureField({
           ? "数字で入れてください（例：37.5）。このままでは記録されません。"
           : "例：37.5 または 38"}
       </p>
-      <Chip
-        label="測っていない"
-        selected={isNotMeasured}
-        onClick={() => {
-          setText("");
-          onChange(toChoiceAnswer(isNotMeasured ? null : { kind: "not_measured" }));
-          onInvalidChange?.(false);
-        }}
-        className={compact ? "mt-2 w-full" : "mt-3 w-full"}
-        compact={compact}
-      />
     </>
   );
 }
@@ -457,7 +496,8 @@ export function FamilyField({
       return (
         <TemperatureField
           answer={answers.temperature}
-          onChange={(next) => onChange({ temperature: next })}
+          range={answers.temperatureRange}
+          onChange={(update) => onChange(update)}
           onInvalidChange={onInvalidChange}
           compact={compact}
         />

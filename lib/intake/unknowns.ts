@@ -15,7 +15,6 @@ import type {
   PatientAnswers,
   Presence,
   Respondent,
-  Temperature,
 } from "./types";
 
 export type AnswerState = "answered" | "dont_know" | "unanswered" | "unable";
@@ -66,8 +65,17 @@ function concernRow(family: FamilyAnswers): Pick<AnswerRow, "state" | "text"> {
   return text === null ? { state: "unanswered", text: "" } : { state: "answered", text };
 }
 
-const formatTemperature = (value: Temperature) =>
-  value.kind === "measured" ? `${value.celsius} ℃` : "測っていない";
+// 熱の行。範囲（38℃以上など）と、分かれば数字。「測っていない」はそのまま
+function temperatureRow(family: FamilyAnswers): Pick<AnswerRow, "state" | "text"> {
+  const range =
+    family.temperatureRange?.status === "answered" ? family.temperatureRange.value : null;
+  const value = family.temperature.status === "answered" ? family.temperature.value : null;
+  if (value?.kind === "not_measured") return { state: "answered", text: "測っていない" };
+  const number = value?.kind === "measured" ? `${value.celsius} ℃` : null;
+  if (range && number) return { state: "answered", text: `${range}（数字：${number}）` };
+  if (range || number) return { state: "answered", text: (range ?? number)! };
+  return { state: "unanswered", text: "" };
+}
 
 // 主症状。こどもが選んだものを、画面の言葉のまま全部出す（かぜっぽい、そのほか、わからない も）。
 // 選んだ記録がない（テストなど）ときは、送る値（patient.feelings）で出す
@@ -199,7 +207,8 @@ export function buildFamilyRows(family: FamilyAnswers): AnswerRow[] {
       respondent: "family",
       label: "熱",
       required: false,
-      ...describe(family.temperature, neverDontKnow, formatTemperature),
+      // 範囲と数字の両方を、入力どおりに出す（合わなくても直さない）。Gemini に送るのは数字だけ
+      ...temperatureRow(family),
     },
     {
       key: "foodIntake",

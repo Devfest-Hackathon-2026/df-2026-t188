@@ -5,6 +5,7 @@ import type {
   FoodIntake,
   Onset,
   Sex,
+  TemperatureRange,
 } from "./options";
 import type { ConcernChoice } from "./concern";
 import type { PatientSymptoms } from "./symptoms";
@@ -51,7 +52,11 @@ export type FamilyAnswers = {
   // lib/summary のテストの回答の例を変えずに済むよう、項目は任意にしている（ないときは未回答と同じ）
   concernChoices?: FamilyAnswer<ConcernChoice[]>;
   onset: FamilyAnswer<Onset>; // いつから
+  // 体温の数字（「分かれば数字も」）または「測っていない」。これだけを Gemini に送る
   temperature: FamilyAnswer<Temperature>;
+  // 体温の範囲（38℃以上など）。Gemini には送らず、見直しと医師の画面に言葉で出す。
+  // lib/summary のテストの回答の例を変えずに済むよう、項目は任意にしている（ないときは未回答と同じ）
+  temperatureRange?: FamilyAnswer<TemperatureRange>;
   foodIntake: FamilyAnswer<FoodIntake>; // 食べる・飲む
   medications: FamilyAnswer<Presence>; // 飲んでいる薬。Gemini には送らない
   allergies: FamilyAnswer<Presence>; // Gemini には送らない

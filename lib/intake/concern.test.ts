@@ -9,6 +9,7 @@ import {
   LONGEST_CHOICES_TEXT_LENGTH,
   withComposedConcern,
 } from "@/lib/intake/concern";
+import { TEMPERATURE_RANGES, type TemperatureRange } from "@/lib/intake/options";
 import type { FamilyAnswers } from "@/lib/intake/types";
 import { buildFamilyRows } from "@/lib/intake/unknowns";
 import { buildSummaryInput } from "@/lib/summary/input";
@@ -103,5 +104,44 @@ describe("見直しと医師の画面の行", () => {
     }).find((item) => item.key === "chiefConcern");
     assert.equal(row?.label, "保護者から見た気になる症状");
     assert.equal(row?.text, "気になる症状：吐いた・吐き気がある。");
+  });
+});
+
+describe("体温の範囲（Gemini には送らず、医師の画面に言葉で出す）", () => {
+  const rowOf = (answers: FamilyAnswers) =>
+    buildFamilyRows(answers).find((item) => item.key === "temperature");
+  const unansweredPatient = { respondent: "patient", status: "unanswered" } as const;
+  const patient = { bodyParts: unansweredPatient, feelings: unansweredPatient, discomfort: unansweredPatient };
+
+  test("範囲だけなら、行は範囲の言葉で、Gemini には体温を送らない", () => {
+    const answers: FamilyAnswers = {
+      ...family,
+      temperatureRange: answered<TemperatureRange>("38℃以上"),
+      chiefConcern: answered("架空の文"),
+    };
+    assert.equal(rowOf(answers)?.text, "38℃以上");
+    assert.equal(buildSummaryInput(patient, answers).family.temperature, undefined);
+  });
+
+  test("範囲と数字があれば、行には両方を出し、Gemini には数字だけを今どおり送る", () => {
+    const answers: FamilyAnswers = {
+      ...family,
+      temperatureRange: answered<TemperatureRange>("37〜38℃未満"),
+      temperature: answered({ kind: "measured", celsius: "38.5" }),
+    };
+    assert.equal(rowOf(answers)?.text, "37〜38℃未満（数字：38.5 ℃）");
+    assert.equal(buildSummaryInput(patient, answers).family.temperature, "38.5 ℃");
+    assert.equal(JSON.stringify(buildSummaryInput(patient, answers)).includes("37〜38"), false);
+  });
+
+  test("測っていない は今どおり送る。範囲がなく数字もなければ未回答", () => {
+    const notMeasured: FamilyAnswers = { ...family, temperature: answered({ kind: "not_measured" }) };
+    assert.equal(rowOf(notMeasured)?.text, "測っていない");
+    assert.equal(buildSummaryInput(patient, notMeasured).family.temperature, "測っていない");
+    assert.equal(rowOf(family)?.state, "unanswered");
+  });
+
+  test("範囲は4つ（36℃未満を含む）", () => {
+    assert.deepEqual([...TEMPERATURE_RANGES], ["38℃以上", "37〜38℃未満", "36〜37℃未満", "36℃未満"]);
   });
 });

@@ -122,6 +122,7 @@ function createUnansweredFamilyAnswers(): FamilyAnswers {
     concernChoices: { respondent: "family", status: "unanswered" },
     onset: { respondent: "family", status: "unanswered" },
     temperature: { respondent: "family", status: "unanswered" },
+    temperatureRange: { respondent: "family", status: "unanswered" },
     foodIntake: { respondent: "family", status: "unanswered" },
     medications: { respondent: "family", status: "unanswered" },
     allergies: { respondent: "family", status: "unanswered" },
