@@ -176,7 +176,7 @@ export function OtherSymptomsScreen({
                     setShowMore((value) => !value);
                   }}
                 >
-                  {showMore ? "候補を すくなくする" : "ほかの こうほを みる"}
+                  {showMore ? "こうほを すくなくする" : "ほかの こうほを みる"}
                 </Button>
               )}
               <p aria-live="polite" className="text-support text-on-surface-variant">
