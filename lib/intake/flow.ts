@@ -14,13 +14,13 @@ export type StepGroup =
   | "doctor"
   | "end";
 
-// 進み具合のバーの区切り（7区切り）。こどもは「主訴 → 程度 → 場所 → そのほか」の順で、
-// 場所（「いたい」のときだけ）と そのほか は1つの区切りに入れる
+// 進み具合のバーの区切り（7区切り）。こどもは「主訴 → 場所 → 程度 → そのほか」の順で、
+// 場所（「いたい」のときだけ）と 程度 は1つの区切りに入れる
 export type ProgressSegment =
   | "respondent" // 誰が答えるか
   | "chooseSymptoms" // 症状を選ぶ（主訴）
-  | "discomfort" // つらさを選ぶ（程度）
-  | "placeAndOther" // 場所とそのほか
+  | "placeAndDiscomfort" // 場所とつらさ
+  | "other" // ほかにも
   | "profile" // 基本情報
   | "familyRecord" // 家族からの記録
   | "review"; // 確認
@@ -28,8 +28,8 @@ export type ProgressSegment =
 export const PROGRESS_SEGMENTS: readonly ProgressSegment[] = [
   "respondent",
   "chooseSymptoms",
-  "discomfort",
-  "placeAndOther",
+  "placeAndDiscomfort",
+  "other",
   "profile",
   "familyRecord",
   "review",
@@ -42,15 +42,15 @@ export type StepInfo = {
   segment: ProgressSegment | null; // バーのどの区切りか。バーを出さない画面は null
 };
 
-// 画面の順番。こどもは「どんなかんじ」→「どれくらい つらい」→「どこが へん」（いたい のときだけ）
+// 画面の順番。こどもは「どんなかんじ」→「どこが へん」（いたい のときだけ）→「どれくらい つらい」
 // →「ほかにも きになることは ある？」
 export const STEPS: readonly StepInfo[] = [
   { key: "welcome", group: "welcome", fullName: "はじめ", segment: null },
   { key: "ability", group: "ability", fullName: "答えられるかの確認", segment: "respondent" },
   { key: "patientFeeling", group: "patient", fullName: "症状を えらぶ", segment: "chooseSymptoms" },
-  { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい", segment: "discomfort" },
-  { key: "patientBody", group: "patient", fullName: "どこが へん", segment: "placeAndOther" },
-  { key: "patientOther", group: "patient", fullName: "ほかに きになること", segment: "placeAndOther" },
+  { key: "patientBody", group: "patient", fullName: "どこが へん", segment: "placeAndDiscomfort" },
+  { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい", segment: "placeAndDiscomfort" },
+  { key: "patientOther", group: "patient", fullName: "ほかに きになること", segment: "other" },
   { key: "patientBreak", group: "patient", fullName: "こどもの おわり", segment: null },
   { key: "familyProfile", group: "family", fullName: "お子さんのこと", segment: "profile" },
   { key: "familyRecord", group: "family", fullName: "家族からの記録", segment: "familyRecord" },

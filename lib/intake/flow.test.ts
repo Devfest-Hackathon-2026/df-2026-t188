@@ -17,22 +17,23 @@ describe("画面の順番", () => {
     ]);
   });
 
-  test("「できる」：主訴 → 程度 → 場所 → そのほか → 区切り", () => {
+  test("「できる」：主訴 → 場所 → 程度 → そのほか → 区切り", () => {
     const keys = flowSteps("able", withPain).map((item) => item.key);
     assert.deepEqual(keys.slice(keys.indexOf("ability"), keys.indexOf("familyProfile") + 1), [
       "ability",
       "patientFeeling",
-      "patientDiscomfort",
       "patientBody",
+      "patientDiscomfort",
       "patientOther",
       "patientBreak",
       "familyProfile",
     ]);
   });
 
-  test("「いたい」を選ばなかったら、「どれくらい つらい」のあとは「ほかにも きになることは ある？」", () => {
+  test("「いたい」を選ばなかったら、「どんなかんじ」→「どれくらい つらい」→「ほかにも きになることは ある？」", () => {
     const keys = flowSteps("able", withoutPain).map((item) => item.key);
     assert.equal(keys.includes("patientBody"), false);
+    assert.equal(keys[keys.indexOf("patientFeeling") + 1], "patientDiscomfort");
     assert.equal(keys[keys.indexOf("patientDiscomfort") + 1], "patientOther");
   });
 
@@ -40,8 +41,8 @@ describe("画面の順番", () => {
     const keys = flowSteps("difficult", withPain).map((item) => item.key);
     for (const skipped of [
       "patientFeeling",
-      "patientDiscomfort",
       "patientBody",
+      "patientDiscomfort",
       "patientOther",
       "patientBreak",
     ]) {
@@ -52,32 +53,33 @@ describe("画面の順番", () => {
 });
 
 describe("進み具合のバー", () => {
-  test("「できる」は7区切り（誰が答えるか／症状を選ぶ／つらさ／場所とそのほか／基本情報／家族からの記録／確認）", () => {
+  test("「できる」は7区切り（誰が答えるか／症状を選ぶ／場所とつらさ／ほかにも／基本情報／家族からの記録／確認）", () => {
     const current = (step: Parameters<typeof progressOf>[0]) =>
       progressOf(step, "able", withPain)?.current;
     assert.equal(progressOf("ability", "able", withPain)?.total, 7);
     assert.equal(current("ability"), 1);
     assert.equal(current("patientFeeling"), 2);
+    assert.equal(current("patientBody"), 3);
     assert.equal(current("patientDiscomfort"), 3);
-    assert.equal(current("patientBody"), 4);
     assert.equal(current("patientOther"), 4);
     assert.equal(current("familyProfile"), 5);
     assert.equal(current("familyRecord"), 6);
     assert.equal(current("review"), 7);
   });
 
-  test("「場所とそのほか」には「どこが へん？」と「ほかにも」が入り、中の位置を数える", () => {
+  test("「場所とつらさ」には「どこが へん？」と「どれくらい つらい？」が入り、中の位置を数える", () => {
     assert.deepEqual(progressOf("patientBody", "able", withPain)?.inSegment, { index: 1, count: 2 });
-    assert.deepEqual(progressOf("patientOther", "able", withPain)?.inSegment, { index: 2, count: 2 });
+    assert.deepEqual(progressOf("patientDiscomfort", "able", withPain)?.inSegment, { index: 2, count: 2 });
   });
 
-  test("「いたい」を選ばなければ、「場所とそのほか」は「ほかにも」の1画面だけで、中の位置は数えない", () => {
+  test("「いたい」を選ばなければ、「場所とつらさ」は「どれくらい つらい？」の1画面だけで、中の位置は数えない", () => {
+    assert.deepEqual(progressOf("patientDiscomfort", "able", withoutPain), { total: 7, current: 3, inSegment: null });
     assert.deepEqual(progressOf("patientOther", "able", withoutPain), { total: 7, current: 4, inSegment: null });
   });
 
   test("画面が1つだけの区切りでは、中の位置を数えない", () => {
     assert.equal(progressOf("patientFeeling", "able", withPain)?.inSegment, null);
-    assert.equal(progressOf("patientDiscomfort", "able", withPain)?.inSegment, null);
+    assert.equal(progressOf("patientOther", "able", withPain)?.inSegment, null);
     assert.equal(progressOf("familyRecord", "able", withPain)?.inSegment, null);
   });
 

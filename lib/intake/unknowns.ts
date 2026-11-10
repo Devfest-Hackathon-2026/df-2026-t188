@@ -124,16 +124,9 @@ export function buildPatientRows(
   patient: PatientAnswers,
   symptoms: PatientSymptoms = EMPTY_SYMPTOMS,
 ): AnswerRow[] {
-  // 入力の順（どんなかんじ → つらさ → へんなところ → ほかに きになること）
+  // 入力の順（どんなかんじ → へんなところ → つらさ → ほかに きになること）
   return [
     feelingsRow(patient, symptoms),
-    {
-      key: "discomfort",
-      respondent: "patient",
-      label: "つらさ（本人が選んだもの）",
-      required: true,
-      ...describe(patient.discomfort, neverDontKnow, discomfortText),
-    },
     {
       key: "bodyParts",
       respondent: "patient",
@@ -141,6 +134,13 @@ export function buildPatientRows(
       // 部位は、主症状で「いたい」を選んだときだけ聞く（症状画面.html と同じ）ので、任意にする
       required: false,
       ...describe(patient.bodyParts, neverDontKnow, joinList),
+    },
+    {
+      key: "discomfort",
+      respondent: "patient",
+      label: "つらさ（本人が選んだもの）",
+      required: true,
+      ...describe(patient.discomfort, neverDontKnow, discomfortText),
     },
     ...otherSymptomsRows(symptoms),
   ];

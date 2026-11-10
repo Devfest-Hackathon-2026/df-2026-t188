@@ -163,10 +163,10 @@ describe("薬・アレルギーの ⚠ の行", () => {
 });
 
 describe("見直しと医師の画面の行", () => {
-  test("こどもの行は、入力の順（どんなかんじ → つらさ → へんなところ → ほかに きになること）", () => {
+  test("こどもの行は、入力の順（どんなかんじ → へんなところ → つらさ → ほかに きになること）", () => {
     assert.deepEqual(
       buildPatientRows(patient, { ...EMPTY_SYMPTOMS, otherGate: "ない" }).map((row) => row.key),
-      ["feelings", "discomfort", "bodyParts", "otherSymptoms"],
+      ["feelings", "bodyParts", "discomfort", "otherSymptoms"],
     );
   });
 
@@ -207,7 +207,7 @@ describe("こどもの主症状と「ほかに きになること」の行（Gem
 
   test("詳しい答えの行はない。「ほかに きになること」に答えていなければ行にしない", () => {
     const rows = buildPatientRows(patient, { ...EMPTY_SYMPTOMS, categories: ["pain", "cough"] });
-    assert.deepEqual(rows.map((row) => row.key), ["feelings", "discomfort", "bodyParts"]);
+    assert.deepEqual(rows.map((row) => row.key), ["feelings", "bodyParts", "discomfort"]);
   });
 
   test("ほかに きになること：ある＋選んだもの、ない、わからない を分けて出す", () => {

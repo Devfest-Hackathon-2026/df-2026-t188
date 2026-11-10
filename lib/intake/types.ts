@@ -67,14 +67,14 @@ export type FamilyAnswers = {
   weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
 };
 
-// こどもの画面は「主訴 → 程度 → 場所 → そのほか」の順（lib/intake/flow.ts の STEPS）
+// こどもの画面は「主訴 → 場所 → 程度 → そのほか」の順（lib/intake/flow.ts の STEPS）
 export type IntakeState = {
   step:
     | "welcome"
     | "ability"
     | "patientFeeling" // 主訴：どんなかんじがする？
-    | "patientDiscomfort" // 程度：どれくらい つらい？
     | "patientBody" // 場所：どこが へん？（「いたい」を選んだときだけ）
+    | "patientDiscomfort" // 程度：どれくらい つらい？
     | "patientOther" // そのほか：ほかにも きになることは ある？
     | "patientBreak" // こどもの区切り（おつかれさま）
     | "familyProfile" // 年齢・性別・体重
