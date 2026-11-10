@@ -33,11 +33,19 @@ describe("表（症状画面.html のとおり）", () => {
     );
   });
 
-  test("ほかに きになることの選択肢は18（ない・わからない を含む）で、どれにも絵文字がある", () => {
-    assert.equal(OTHER_CHOICES.length, 18);
+  test("ほかに きになることの選択肢は17（ない・わからない を含む）で、どれにも絵文字がある", () => {
+    assert.equal(OTHER_CHOICES.length, 17);
     for (const choice of OTHER_CHOICES) assert.notEqual(symptomEmoji(choice), "💬", choice);
     assert.equal(symptomEmoji("はなみずがでる"), "🤧");
     assert.equal(symptomEmoji("存在しない選択肢"), "💬");
+  });
+
+  test("「はきけがある」は出さない（こどもには「きもちわるい」と区別しにくいため、2026-11-10 に外した）", () => {
+    assert.equal(OTHER_CHOICES.includes("はきけがある"), false);
+    for (const category of ["pain", "sick", "fever"] as const) {
+      const state = selectOtherGate(withCategories(category), "ある");
+      assert.equal(visibleOtherChoices(state, true).choices.includes("はきけがある"), false, category);
+    }
   });
 });
 
@@ -87,25 +95,25 @@ describe("同じ意味の選択肢を隠す（answerAliases）", () => {
 
   test("主症状を選ばなければ、何も隠さない", () => {
     const state = selectOtherGate(EMPTY_SYMPTOMS, "ある");
-    assert.equal(visibleOtherChoices(state, true).choices.length, 16);
+    assert.equal(visibleOtherChoices(state, true).choices.length, 15);
   });
 });
 
 describe("並びと「ほかの こうほを みる」", () => {
   test("選んだ主症状に関係しやすいもの（relatedSuggestions）を先に出す。ない・わからない は入れない", () => {
     const order = orderedOtherChoices(withCategories("pain"));
-    assert.deepEqual(order.slice(0, 3), ["はきけがある", "めまいがする", "ねつっぽい"]);
+    assert.deepEqual(order.slice(0, 3), ["めまいがする", "ねつっぽい", "あたまがおもい"]);
     assert.equal(order.includes("ない"), false);
     assert.equal(order.includes("わからない"), false);
-    assert.equal(order.length, 16);
+    assert.equal(order.length, 15);
   });
 
   test("はじめは6つだけ出し、「ほかの こうほを みる」で全部出す", () => {
     const state = selectOtherGate(withCategories("pain"), "ある");
     const first = visibleOtherChoices(state, false);
-    assert.deepEqual(first.choices, ["はきけがある", "めまいがする", "ねつっぽい", "あたまがおもい", "からだがだるい", "しょくよくがない"]);
+    assert.deepEqual(first.choices, ["めまいがする", "ねつっぽい", "あたまがおもい", "からだがだるい", "しょくよくがない", "かゆい"]);
     assert.equal(first.hasMore, true);
-    assert.equal(visibleOtherChoices(state, true).choices.length, 16);
+    assert.equal(visibleOtherChoices(state, true).choices.length, 15);
   });
 
   test("隠したものは6つに数えない（いきがくるしい を選んだら、「いきがしにくい」を除いて6つ）", () => {
