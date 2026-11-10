@@ -7,7 +7,7 @@
 // こどもの画面は「主訴 → 部位・状態の詳しい質問 → ほかにも → つらさ」の順（2026-11-10 にチームで決めた）。
 // 「いたい」の詳しい質問は、部位（どこが へん？）だけにする（「どんなふうに いたい？」は出さない）。
 // ほかの主症状の詳しい質問は、2026-11-09 にいったんなくした画面を、消す前のとおりに戻したもの。
-// ただし「きもちわるい」の「はきけがある」は、こどもには「きもちわるい」と区別しにくいため外した。
+// ただし「きもちわるい」と「かぜっぽい」の「はきけがある」は、こどもには「きもちわるい」と区別しにくいため外した。
 //
 // 詳しい答えと「ほかに きになること」の答えは、Gemini に送らない（見直しと医師の画面に言葉で出すだけ）。
 // Gemini に送るのは、主症状のうち、今のサーバーの選択肢に一致するものだけ（categoryFeelings）
@@ -57,12 +57,12 @@ export const CATEGORY_CARD_ORDER: readonly SymptomCategoryKey[] = [
 ];
 
 // 主症状ごとの詳しい質問と選択肢（HTML の symptomCategories の question と choices。消す前のとおり）。
-// 「きもちわるい」の「はきけがある」は、2026-11-10 にチームで決めて外した
+// 「きもちわるい」と「かぜっぽい」の「はきけがある」は、2026-11-10 にチームで決めて外した
 export const SYMPTOM_DETAILS: Record<DetailCategoryKey, { question: string; choices: readonly string[] }> = {
   sick: { question: "どんなふうに きもちわるい？", choices: ["おなかがむかむか", "あたまがくらくら", "まわりがぐるぐる", "からだがふわふわ", "あたまがぼーっとする", "わからない"] },
   breath: { question: "どんなふうに くるしい？", choices: ["いきがしにくい", "むねがくるしい", "わからない"] },
   cough: { question: "どんな せきがでる？", choices: ["こんこん（かわいたせき）", "たんがからむ", "ぜえぜえする", "わからない"] },
-  fever: { question: "どんなかんじがする？", choices: ["からだがあつい", "さむけがする", "あせがでる", "あたまがおもい", "からだがだるい", "のどがかわく", "はきけがある", "うんちがゆるい", "はなみずがでる", "せきがでる", "のどがいたい", "わからない"] },
+  fever: { question: "どんなかんじがする？", choices: ["からだがあつい", "さむけがする", "あせがでる", "あたまがおもい", "からだがだるい", "のどがかわく", "うんちがゆるい", "はなみずがでる", "せきがでる", "のどがいたい", "わからない"] },
 };
 
 // 詳しい質問の画面の順（HTML の symptomCategories のキーの順。消す前と同じ）
@@ -115,7 +115,7 @@ export const OTHER_PRIMARY_COUNT = 6;
 // 絵文字は補助表現として用い、選択肢の文字と一緒に表示する（HTML の symptomEmoji。ないものは 💬）
 export const SYMPTOM_EMOJI: Record<string, string> = {
   はなみずがでる: "🤧", "はだがあかい・ぶつぶつ": "🖐️", みみがきになる: "👂", あたまがくらくら: "😵‍💫", まわりがぐるぐる: "😵‍💫", からだがふわふわ: "☁️", あたまがぼーっとする: "😶‍🌫️", あせがでる: "💦", あたまがおもい: "😓", からだがだるい: "😮‍💨", のどがかわく: "🥤",
-  しょくよくがない: "🍽️", ない: "🙆", のどがいたい: "😣", ぜえぜえする: "💨", うんちがゆるい: "🚽", はきけがある: "🤢", おなかがむかむか: "🤢", めまいがする: "😵‍💫",
+  しょくよくがない: "🍽️", ない: "🙆", のどがいたい: "😣", ぜえぜえする: "💨", うんちがゆるい: "🚽", おなかがむかむか: "🤢", めまいがする: "😵‍💫",
   ねつっぽい: "🤒",
   いきがしにくい: "💨", せきがでる: "😷", むねがくるしい: "🫁",
   "こんこん（かわいたせき）": "😷", たんがからむ: "💧",
@@ -129,7 +129,6 @@ export function symptomEmoji(choice: string): string {
 // 選択肢の下の短い言葉（HTML の symptomMotionType と symptomCues。消す前のとおり）
 function symptomMotionType(choice: string): string {
   if (choice === "おなかがむかむか") return "upset";
-  if (choice === "はきけがある") return "nausea";
   if (choice === "いきがしにくい") return "breathing";
   if (choice === "むねがくるしい") return "chest";
   if (choice === "たんがからむ") return "phlegm";
@@ -144,7 +143,7 @@ function symptomMotionType(choice: string): string {
 }
 
 const SYMPTOM_CUES: Record<string, string> = {
-  upset: "むかむか", nausea: "はきそう", breathing: "いきがしにくい",
+  upset: "むかむか", breathing: "いきがしにくい",
   chest: "むねがくるしい", phlegm: "たんがからむ", chills: "ぞくぞく", itch: "むずむず",
   tingle: "ぴりぴり", dizzy: "くらくら", cough: "こんこん", heat: "ぽかぽか",
 };
