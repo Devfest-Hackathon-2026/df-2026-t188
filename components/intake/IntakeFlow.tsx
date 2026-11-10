@@ -54,6 +54,11 @@ const AUDIENCE: Partial<Record<StepGroup, string>> = {
   doctor: "医師に見せる画面",
 };
 
+// 上の部分の見出しの枠。1行のまま折り返さない。
+// 幅 400px 未満では文字を少し小さくする（「医師に見せる画面」が幅 390px でも真ん中に収まるように）
+const AUDIENCE_BADGE_CLASS =
+  "inline-block whitespace-nowrap rounded-full px-3 py-0.5 text-support font-bold max-[399px]:text-[0.875rem] max-[399px]:leading-6";
+
 // こどもの画面と保護者の画面の、どの問いを出すか
 const PATIENT_FIELDS: Partial<Record<Step, PatientFieldKey>> = {
   patientBody: "bodyParts",
@@ -343,13 +348,13 @@ export function IntakeFlow() {
                     <h1
                       tabIndex={-1}
                       data-screen-heading
-                      className="inline-block rounded-full bg-primary-container px-3 py-0.5 text-support font-bold text-on-primary-container outline-none"
+                      className={`${AUDIENCE_BADGE_CLASS} bg-primary-container text-on-primary-container outline-none`}
                     >
                       {audience}
                     </h1>
                   ) : (
                     <span
-                      className={`inline-block rounded-full px-3 py-0.5 text-support font-bold ${
+                      className={`${AUDIENCE_BADGE_CLASS} ${
                         group === "patient"
                           ? "bg-primary-container text-on-primary-container"
                           : "bg-family-container text-family"
@@ -359,7 +364,8 @@ export function IntakeFlow() {
                     </span>
                   ))}
               </div>
-              <div aria-hidden="true" className="w-24 shrink-0" />
+              {/* 見出しを真ん中に置くための空き。幅が足りないときは縮んで、見出しに場所をゆずる */}
+              <div aria-hidden="true" className="w-24 min-w-0 shrink" />
             </div>
             {progress && (
               <ProgressBar
