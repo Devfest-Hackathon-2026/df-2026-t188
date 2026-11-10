@@ -3,6 +3,7 @@
 import { concernText } from "./concern";
 import { discomfortText } from "./options";
 import {
+  DETAIL_PHASE_ORDER,
   EMPTY_SYMPTOMS,
   SYMPTOM_CATEGORIES,
   type PatientSymptoms,
@@ -96,6 +97,26 @@ function feelingsRow(patient: PatientAnswers, symptoms: PatientSymptoms): Answer
   };
 }
 
+// 主症状ごとの詳しい答え。Gemini には送らず、見直しと医師の画面に言葉で出すだけ（消す前のとおり）。
+// 答えがある主症状だけ行にする
+function symptomDetailRows(symptoms: PatientSymptoms): AnswerRow[] {
+  return DETAIL_PHASE_ORDER.flatMap((key) => {
+    const values = symptoms.details[key] ?? [];
+    if (!symptoms.categories.includes(key) || values.length === 0) return [];
+    const isDontKnow = values.every((value) => value === DONT_KNOW);
+    return [
+      {
+        key: `detail-${key}`,
+        respondent: "patient" as const,
+        label: `「${SYMPTOM_CATEGORIES[key].label}」について（本人が選んだもの）`,
+        required: false,
+        state: isDontKnow ? ("dont_know" as const) : ("answered" as const),
+        text: isDontKnow ? "" : joinList(values),
+      },
+    ];
+  });
+}
+
 // ほかに きになること。Gemini には送らず、見直しと医師の画面に言葉で出すだけ。
 // 答えたときだけ行にする
 function otherSymptomsRows(symptoms: PatientSymptoms): AnswerRow[] {
@@ -124,16 +145,9 @@ export function buildPatientRows(
   patient: PatientAnswers,
   symptoms: PatientSymptoms = EMPTY_SYMPTOMS,
 ): AnswerRow[] {
-  // 入力の順（どんなかんじ → つらさ → へんなところ → ほかに きになること）
+  // 入力の順（どんなかんじ → へんなところ → 主症状ごとの詳しい答え → ほかに きになること → つらさ）
   return [
     feelingsRow(patient, symptoms),
-    {
-      key: "discomfort",
-      respondent: "patient",
-      label: "つらさ（本人が選んだもの）",
-      required: true,
-      ...describe(patient.discomfort, neverDontKnow, discomfortText),
-    },
     {
       key: "bodyParts",
       respondent: "patient",
@@ -142,7 +156,15 @@ export function buildPatientRows(
       required: false,
       ...describe(patient.bodyParts, neverDontKnow, joinList),
     },
+    ...symptomDetailRows(symptoms),
     ...otherSymptomsRows(symptoms),
+    {
+      key: "discomfort",
+      respondent: "patient",
+      label: "つらさ（本人が選んだもの）",
+      required: true,
+      ...describe(patient.discomfort, neverDontKnow, discomfortText),
+    },
   ];
 }
 

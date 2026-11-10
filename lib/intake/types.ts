@@ -67,15 +67,26 @@ export type FamilyAnswers = {
   weight: FamilyAnswer<string>; // 体重（kg）。入力した文字のまま持つ。Gemini には送らない
 };
 
-// こどもの画面は「主訴 → 程度 → 場所 → そのほか」の順（lib/intake/flow.ts の STEPS）
+// 主症状ごとの詳しい質問の画面（「いたい」は部位の画面 patientBody で聞く）
+export const PATIENT_DETAIL_STEPS = {
+  sick: "patientDetailSick",
+  breath: "patientDetailBreath",
+  cough: "patientDetailCough",
+  fever: "patientDetailFever",
+} as const;
+
+export type PatientDetailStep = (typeof PATIENT_DETAIL_STEPS)[keyof typeof PATIENT_DETAIL_STEPS];
+
+// こどもの画面は「主訴 → 部位・状態の詳しい質問 → ほかにも → つらさ」の順（lib/intake/flow.ts の STEPS）
 export type IntakeState = {
   step:
     | "welcome"
     | "ability"
     | "patientFeeling" // 主訴：どんなかんじがする？
-    | "patientDiscomfort" // 程度：どれくらい つらい？
-    | "patientBody" // 場所：どこが へん？（「いたい」を選んだときだけ）
-    | "patientOther" // そのほか：ほかにも きになることは ある？
+    | "patientBody" // 部位：どこが へん？（「いたい」を選んだときだけ）
+    | PatientDetailStep // 状態：選んだ主症状ごとの詳しい質問
+    | "patientOther" // ほかにも きになることは ある？
+    | "patientDiscomfort" // つらさ：どれくらい つらい？
     | "patientBreak" // こどもの区切り（おつかれさま）
     | "familyProfile" // 年齢・性別・体重
     | "familyRecord" // 家族からの記録（保護者から見た気になる症状・いつから・熱・食べる飲む・持病・アレルギー・薬を1ページで）

@@ -1,10 +1,11 @@
 // 案内ボックスのキャラクターの表情と、決まった文。AI は使わない。
 // 選んだ内容を受けて決まった文を返すだけで、症状を判断したり、診断したりしない
-import type { Step } from "./flow";
+import { detailCategoryOf, type Step } from "./flow";
 import { BODY_PART_DISPLAY, DISCOMFORT_LABELS } from "./options";
 import {
   OTHER_QUESTION,
   SYMPTOM_CATEGORIES,
+  type DetailCategoryKey,
   type PatientSymptoms,
 } from "./symptoms";
 import type { FamilyAnswers, PatientAnswers } from "./types";
@@ -25,7 +26,7 @@ export type Guide = {
   reaction: string; // 選んだ内容への短い返事。なければ空
 };
 
-// 「ほかにも きになることは ある？」の画面で、最後に押したもの。HTML では、押したボタンで返事を変える
+// 主症状ごとの詳しい質問と「ほかにも きになることは ある？」の画面で、最後に押したもの。HTML では、押したボタンで返事を変える
 // （「わからない」なら think と「わからなくても だいじょうぶだよ。」、ほかは listen と「えらびなおすことも できるよ。」）
 export type OtherReaction = "pick" | "dontKnow" | null;
 
@@ -89,6 +90,19 @@ function chooseSymptomsGuide(symptoms: PatientSymptoms): Guide {
 export const OTHER_DESCRIPTION =
   "わかるところだけでだいじょうぶ。あてはまるものをえらんでね。";
 
+// 主症状ごとの詳しい質問の画面（消す前のとおり。見出しは「○○」について）
+function detailGuide(key: DetailCategoryKey, reaction: OtherReaction): Guide {
+  const title = `「${SYMPTOM_CATEGORIES[key].label}」について`;
+  const description = OTHER_DESCRIPTION;
+  if (reaction === "dontKnow") {
+    return { pose: "think", title, description, reaction: "わからなくても だいじょうぶだよ。" };
+  }
+  if (reaction === "pick") {
+    return { pose: "listen", title, description, reaction: "えらびなおすことも できるよ。" };
+  }
+  return { pose: "listen", title, description, reaction: "わかるところだけで だいじょうぶ。" };
+}
+
 function otherGuide(reaction: OtherReaction): Guide {
   const title = OTHER_QUESTION;
   const description = OTHER_DESCRIPTION;
@@ -118,6 +132,8 @@ export function guideFor(
   step: Step,
   { patient, family, symptoms, otherReaction }: GuideContext,
 ): Guide | null {
+  const detail = detailCategoryOf(step);
+  if (detail !== null) return detailGuide(detail, otherReaction);
   switch (step) {
     case "ability":
       return {

@@ -1,11 +1,15 @@
-// 「症状をえらぶ」と「ほかにも きになることは ある？」の表と決まり。
+// 「症状をえらぶ」「症状をくわしく」「ほかにも きになることは ある？」の表と決まり。
 // かずまさんの v3 の症状画面.html（.claude/design-ref/v3/症状画面_HTML移行用/）の
-// symptomCategories、answerAliases、relatedSuggestions、symptomEmoji、chooseCategory、
-// selectOtherAnswer、alreadyAnsweredBefore、orderedOtherChoices、updateOtherChoiceVisibility を写している。
-// 主症状ごとの詳しい質問の画面は、2026-11-09 にチームで決めてなくした（こどもの画面は
-// 主訴 → 程度 → 場所 → そのほか）。そのため、詳しい質問の表と、その答えを使う決まりは入れていない。
+// symptomCategories、answerAliases、relatedSuggestions、symptomEmoji、symptomCues、
+// symptomMotionType、chooseCategory、chooseSymptomDetail、selectOtherAnswer、
+// alreadyAnsweredBefore、orderedOtherChoices、updateOtherChoiceVisibility を写している。
 //
-// 「ほかに きになること」の答えは、Gemini に送らない（見直しと医師の画面に言葉で出すだけ）。
+// こどもの画面は「主訴 → 部位・状態の詳しい質問 → ほかにも → つらさ」の順（2026-11-10 にチームで決めた）。
+// 「いたい」の詳しい質問は、部位（どこが へん？）だけにする（「どんなふうに いたい？」は出さない）。
+// ほかの主症状の詳しい質問は、2026-11-09 にいったんなくした画面を、消す前のとおりに戻したもの。
+// ただし「きもちわるい」の「はきけがある」は、こどもには「きもちわるい」と区別しにくいため外した。
+//
+// 詳しい答えと「ほかに きになること」の答えは、Gemini に送らない（見直しと医師の画面に言葉で出すだけ）。
 // Gemini に送るのは、主症状のうち、今のサーバーの選択肢に一致するものだけ（categoryFeelings）
 import type { Feeling } from "./options";
 
@@ -22,6 +26,9 @@ export type SymptomCategoryKey =
 
 // 関係しやすい候補を持つ主症状（そのほか と わからない 以外）
 type RelatedCategoryKey = Exclude<SymptomCategoryKey, "other" | "unknown">;
+
+// 詳しい質問の画面がある主症状（「いたい」は部位の画面で聞くので入れない）
+export type DetailCategoryKey = Exclude<RelatedCategoryKey, "pain">;
 
 type CategoryDefinition = {
   label: string;
@@ -48,6 +55,18 @@ export const CATEGORY_CARD_ORDER: readonly SymptomCategoryKey[] = [
   "other",
   "unknown",
 ];
+
+// 主症状ごとの詳しい質問と選択肢（HTML の symptomCategories の question と choices。消す前のとおり）。
+// 「きもちわるい」の「はきけがある」は、2026-11-10 にチームで決めて外した
+export const SYMPTOM_DETAILS: Record<DetailCategoryKey, { question: string; choices: readonly string[] }> = {
+  sick: { question: "どんなふうに きもちわるい？", choices: ["おなかがむかむか", "あたまがくらくら", "まわりがぐるぐる", "からだがふわふわ", "あたまがぼーっとする", "わからない"] },
+  breath: { question: "どんなふうに くるしい？", choices: ["いきがしにくい", "むねがくるしい", "わからない"] },
+  cough: { question: "どんな せきがでる？", choices: ["こんこん（かわいたせき）", "たんがからむ", "ぜえぜえする", "わからない"] },
+  fever: { question: "どんなかんじがする？", choices: ["からだがあつい", "さむけがする", "あせがでる", "あたまがおもい", "からだがだるい", "のどがかわく", "はきけがある", "うんちがゆるい", "はなみずがでる", "せきがでる", "のどがいたい", "わからない"] },
+};
+
+// 詳しい質問の画面の順（HTML の symptomCategories のキーの順。消す前と同じ）
+export const DETAIL_PHASE_ORDER: readonly DetailCategoryKey[] = ["sick", "breath", "cough", "fever"];
 
 // 「ほかにも きになることは ある？」の質問と選択肢（HTML の symptomCategories.other）。
 // 「はきけがある」は、こどもには「きもちわるい」と区別しにくいため、2026-11-10 にチームで決めて外した
@@ -93,35 +112,66 @@ export const RELATED_SUGGESTIONS: Record<RelatedCategoryKey, readonly string[]> 
 // 「ほかの こうほを みる」を押すまでに出す数（HTML の candidates.slice(0,6)）
 export const OTHER_PRIMARY_COUNT = 6;
 
-// 絵文字は補助表現として用い、選択肢の文字と一緒に表示する（HTML の symptomEmoji のうち、
-// 「ほかに きになること」の選択肢の分。ないものは 💬）
+// 絵文字は補助表現として用い、選択肢の文字と一緒に表示する（HTML の symptomEmoji。ないものは 💬）
 export const SYMPTOM_EMOJI: Record<string, string> = {
-  はなみずがでる: "🤧", せきがでる: "😷", のどがいたい: "😣", うんちがゆるい: "🚽",
-  しょくよくがない: "🍽️", いきがしにくい: "💨", あたまがおもい: "😓", からだがだるい: "😮‍💨",
-  ねつっぽい: "🤒", のどがかわく: "🥤", めまいがする: "😵‍💫", かゆい: "✋", しびれる: "⚡",
-  "はだがあかい・ぶつぶつ": "🖐️", みみがきになる: "👂", ない: "🙆", わからない: "❓",
+  はなみずがでる: "🤧", "はだがあかい・ぶつぶつ": "🖐️", みみがきになる: "👂", あたまがくらくら: "😵‍💫", まわりがぐるぐる: "😵‍💫", からだがふわふわ: "☁️", あたまがぼーっとする: "😶‍🌫️", あせがでる: "💦", あたまがおもい: "😓", からだがだるい: "😮‍💨", のどがかわく: "🥤",
+  しょくよくがない: "🍽️", ない: "🙆", のどがいたい: "😣", ぜえぜえする: "💨", うんちがゆるい: "🚽", はきけがある: "🤢", おなかがむかむか: "🤢", めまいがする: "😵‍💫",
+  ねつっぽい: "🤒",
+  いきがしにくい: "💨", せきがでる: "😷", むねがくるしい: "🫁",
+  "こんこん（かわいたせき）": "😷", たんがからむ: "💧",
+  からだがあつい: "🥵", さむけがする: "🥶", かゆい: "✋", しびれる: "⚡", わからない: "❓",
 };
 
 export function symptomEmoji(choice: string): string {
   return SYMPTOM_EMOJI[choice] ?? "💬";
 }
 
+// 選択肢の下の短い言葉（HTML の symptomMotionType と symptomCues。消す前のとおり）
+function symptomMotionType(choice: string): string {
+  if (choice === "おなかがむかむか") return "upset";
+  if (choice === "はきけがある") return "nausea";
+  if (choice === "いきがしにくい") return "breathing";
+  if (choice === "むねがくるしい") return "chest";
+  if (choice === "たんがからむ") return "phlegm";
+  if (choice === "さむけがする") return "chills";
+  if (choice === "かゆい") return "itch";
+  if (choice === "しびれる") return "tingle";
+  if (choice === "めまいがする") return "dizzy";
+  if (["せきがでる", "こんこん（かわいたせき）"].includes(choice)) return "cough";
+  if (["ねつっぽい", "からだがあつい"].includes(choice)) return "heat";
+  if (choice === "わからない") return "unknown";
+  return "generic";
+}
+
+const SYMPTOM_CUES: Record<string, string> = {
+  upset: "むかむか", nausea: "はきそう", breathing: "いきがしにくい",
+  chest: "むねがくるしい", phlegm: "たんがからむ", chills: "ぞくぞく", itch: "むずむず",
+  tingle: "ぴりぴり", dizzy: "くらくら", cough: "こんこん", heat: "ぽかぽか",
+};
+
+// 短い言葉がない選択肢は空文字
+export function symptomCue(choice: string): string {
+  return SYMPTOM_CUES[symptomMotionType(choice)] ?? "";
+}
+
 // ---------- 選んだ内容（画面の中だけで持つ。保存しない） ----------
 
 export type PatientSymptoms = {
   categories: SymptomCategoryKey[]; // 選んだ順
+  details: Partial<Record<DetailCategoryKey, string[]>>; // 主症状ごとの詳しい答え（選んだ順）
   otherGate: OtherGate | null; // 「ほかに きになることは ある？」の最初の答え
   other: string[]; // otherGate が「ある」のときに選んだもの（選んだ順）
 };
 
 export const EMPTY_SYMPTOMS: PatientSymptoms = {
   categories: [],
+  details: {},
   otherGate: null,
   other: [],
 };
 
 // 主症状を選ぶ・外す（HTML の chooseCategory）。
-// 外すときは、ほかに きになることの答えを消す（隠す候補と並びが変わるため）
+// 外すときは、ほかに きになることの答えと、その主症状の詳しい答えを消す
 export function toggleCategory(
   state: PatientSymptoms,
   key: SymptomCategoryKey,
@@ -129,10 +179,36 @@ export function toggleCategory(
   if (!state.categories.includes(key)) {
     return { ...state, categories: [...state.categories, key] };
   }
+  const details = { ...state.details };
+  if (key in SYMPTOM_DETAILS) delete details[key as DetailCategoryKey];
   return {
     categories: state.categories.filter((item) => item !== key),
+    details,
     otherGate: null,
     other: [],
+  };
+}
+
+// 選んだもの（または、すでに選んでいたもの）を切り替える。
+// 「わからない」（そのほかでは「ない」も）を選ぶとほかを外し、ほかを選ぶと「わからない」「ない」を外す
+// （HTML の chooseSymptomDetail）
+function toggleChoice(selected: readonly string[], choice: string, isOther: boolean): string[] {
+  if (selected.includes(choice)) return selected.filter((item) => item !== choice);
+  if (choice === "わからない" || (isOther && choice === "ない")) return [choice];
+  return [
+    ...selected.filter((item) => item !== "わからない" && !(isOther && item === "ない")),
+    choice,
+  ];
+}
+
+export function toggleDetail(
+  state: PatientSymptoms,
+  key: DetailCategoryKey,
+  choice: string,
+): PatientSymptoms {
+  return {
+    ...state,
+    details: { ...state.details, [key]: toggleChoice(state.details[key] ?? [], choice, false) },
   };
 }
 
@@ -143,26 +219,41 @@ export function selectOtherGate(state: PatientSymptoms, value: OtherGate): Patie
   return { ...state, otherGate: next, other: [] };
 }
 
-// 選んだもの（または、すでに選んでいたもの）を切り替える。
-// 「ない」「わからない」を選ぶとほかを外し、ほかを選ぶと「ない」「わからない」を外す
 export function toggleOther(state: PatientSymptoms, choice: string): PatientSymptoms {
-  const selected = state.other;
-  if (selected.includes(choice)) {
-    return { ...state, other: selected.filter((item) => item !== choice) };
-  }
-  if (isNoneOrDontKnow(choice)) return { ...state, other: [choice] };
-  return { ...state, other: [...selected.filter((item) => !isNoneOrDontKnow(item)), choice] };
+  return { ...state, other: toggleChoice(state.other, choice, true) };
 }
 
-// ---------- 「ほかに きになること」で出す選択肢 ----------
+// ---------- 詳しい質問の画面と「ほかに きになること」で出す選択肢 ----------
 
-// 前に答えたもの（HTML の alreadyAnsweredBefore。言いかえの表で同じ意味にそろえる）。
-// 詳しい質問の画面がなくなったので、選んだ主症状だけを数える
-export function answeredBefore(state: PatientSymptoms): Set<string> {
-  return new Set(
+// 詳しい質問の画面を出す主症状（選んだもののうち、消す前と同じ順）
+export function detailPhases(state: PatientSymptoms): DetailCategoryKey[] {
+  return DETAIL_PHASE_ORDER.filter((key) => state.categories.includes(key));
+}
+
+// この画面より前に答えたもの（HTML の alreadyAnsweredBefore。言いかえの表で同じ意味にそろえる）。
+// 選んだ主症状と、前の詳しい質問の答えを数える。phase を省くと「ほかに きになること」の画面（詳しい答えを全部数える）
+export function answeredBefore(state: PatientSymptoms, phase?: DetailCategoryKey): Set<string> {
+  const seen = new Set(
     state.categories
       .filter((key) => key !== "other" && key !== "unknown")
       .map((key) => answerKey(SYMPTOM_CATEGORIES[key].label)),
+  );
+  const order = detailPhases(state);
+  const previous = phase === undefined ? order : order.slice(0, order.indexOf(phase));
+  previous.forEach((key) => {
+    (state.details[key] ?? []).forEach((value) => {
+      if (!isNoneOrDontKnow(value)) seen.add(answerKey(value));
+    });
+  });
+  return seen;
+}
+
+// 詳しい質問の画面で出す選択肢。前に答えたものと同じ意味のものは隠す（選んでいたら残す）
+export function visibleDetailChoices(state: PatientSymptoms, key: DetailCategoryKey): string[] {
+  const seen = answeredBefore(state, key);
+  const selected = state.details[key] ?? [];
+  return SYMPTOM_DETAILS[key].choices.filter(
+    (value) => isNoneOrDontKnow(value) || selected.includes(value) || !seen.has(answerKey(value)),
   );
 }
 
@@ -182,7 +273,7 @@ export function orderedOtherChoices(state: PatientSymptoms): string[] {
 }
 
 // 出す選択肢と、「ほかの こうほを みる」を出すか（HTML の updateOtherChoiceVisibility）。
-// 選んだ主症状と同じ意味のものは隠す（選んでいたら残す）
+// 選んだ主症状や詳しい答えと同じ意味のものは隠す（選んでいたら残す）
 export function visibleOtherChoices(
   state: PatientSymptoms,
   showMore: boolean,

@@ -52,7 +52,9 @@ export function EndScreen({ onBackToDoctor, onRestart }: EndScreenProps) {
         <div className="flex flex-col gap-1 rounded-[18px] bg-surface-container-lowest px-4 py-3 text-on-surface">
           <p className="text-body font-bold">ご回答、ありがとうございました</p>
           <p className="text-support text-on-surface-variant">
-            入力した内容は保存していません。この画面を閉じると消えます。
+            入力した内容は保存していません。
+            <br />
+            この画面を閉じると消えます。
           </p>
         </div>
       </div>
