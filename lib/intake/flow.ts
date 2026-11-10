@@ -1,6 +1,5 @@
 // 画面の順番と、進み具合のバーの区切り。画面の部品から切り離して、テストできるようにしている
-import type { DetailCategoryKey } from "./symptoms";
-import { PATIENT_DETAIL_STEPS, type IntakeState } from "./types";
+import type { IntakeState } from "./types";
 
 export type Step = IntakeState["step"];
 export type CanSelfReport = IntakeState["canSelfReport"];
@@ -15,13 +14,13 @@ export type StepGroup =
   | "doctor"
   | "end";
 
-// 進み具合のバーの区切り（7区切り）。こどもは「主訴 → 部位・状態の詳しい質問 → ほかにも → つらさ」の順で、
-// 部位（「いたい」のときだけ）、主症状ごとの詳しい質問、ほかにも は1つの区切り（症状を くわしく）に入れる
+// 進み具合のバーの区切り（7区切り）。こどもは「主訴 → 程度 → 場所 → そのほか」の順で、
+// 場所（「いたい」のときだけ）と そのほか は1つの区切りに入れる
 export type ProgressSegment =
   | "respondent" // 誰が答えるか
   | "chooseSymptoms" // 症状を選ぶ（主訴）
-  | "symptomDetails" // 症状を くわしく（部位・状態の詳しい質問と、ほかにも）
   | "discomfort" // つらさを選ぶ（程度）
+  | "placeAndOther" // 場所とそのほか
   | "profile" // 基本情報
   | "familyRecord" // 家族からの記録
   | "review"; // 確認
@@ -29,8 +28,8 @@ export type ProgressSegment =
 export const PROGRESS_SEGMENTS: readonly ProgressSegment[] = [
   "respondent",
   "chooseSymptoms",
-  "symptomDetails",
   "discomfort",
+  "placeAndOther",
   "profile",
   "familyRecord",
   "review",
@@ -43,20 +42,15 @@ export type StepInfo = {
   segment: ProgressSegment | null; // バーのどの区切りか。バーを出さない画面は null
 };
 
-// 画面の順番。こどもは「どんなかんじ」→「どこが へん」（いたい のときだけ）
-// → 主症状ごとの詳しい質問（選んだものだけ。きもちわるい → いきがくるしい → せき → かぜっぽい の順）
-// →「ほかにも きになることは ある？」→「どれくらい つらい」
+// 画面の順番。こどもは「どんなかんじ」→「どれくらい つらい」→「どこが へん」（いたい のときだけ）
+// →「ほかにも きになることは ある？」
 export const STEPS: readonly StepInfo[] = [
   { key: "welcome", group: "welcome", fullName: "はじめ", segment: null },
   { key: "ability", group: "ability", fullName: "答えられるかの確認", segment: "respondent" },
   { key: "patientFeeling", group: "patient", fullName: "症状を えらぶ", segment: "chooseSymptoms" },
-  { key: "patientBody", group: "patient", fullName: "どこが へん", segment: "symptomDetails" },
-  { key: PATIENT_DETAIL_STEPS.sick, group: "patient", fullName: "きもちわるい について", segment: "symptomDetails" },
-  { key: PATIENT_DETAIL_STEPS.breath, group: "patient", fullName: "いきがくるしい について", segment: "symptomDetails" },
-  { key: PATIENT_DETAIL_STEPS.cough, group: "patient", fullName: "せきがでる について", segment: "symptomDetails" },
-  { key: PATIENT_DETAIL_STEPS.fever, group: "patient", fullName: "かぜっぽい について", segment: "symptomDetails" },
-  { key: "patientOther", group: "patient", fullName: "ほかに きになること", segment: "symptomDetails" },
   { key: "patientDiscomfort", group: "patient", fullName: "どれくらい つらい", segment: "discomfort" },
+  { key: "patientBody", group: "patient", fullName: "どこが へん", segment: "placeAndOther" },
+  { key: "patientOther", group: "patient", fullName: "ほかに きになること", segment: "placeAndOther" },
   { key: "patientBreak", group: "patient", fullName: "こどもの おわり", segment: null },
   { key: "familyProfile", group: "family", fullName: "お子さんのこと", segment: "profile" },
   { key: "familyRecord", group: "family", fullName: "家族からの記録", segment: "familyRecord" },
@@ -73,28 +67,19 @@ export function stepInfo(step: Step): StepInfo {
   return STEPS[stepIndex(step)];
 }
 
-// 詳しい質問の画面がどの主症状のものか。詳しい質問の画面でなければ null
-export function detailCategoryOf(step: Step): DetailCategoryKey | null {
-  const entry = Object.entries(PATIENT_DETAIL_STEPS).find(([, value]) => value === step);
-  return entry ? (entry[0] as DetailCategoryKey) : null;
-}
-
 // こどもの答えで変わる画面。
-// asksBody は「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）。
-// details は詳しい質問を出す主症状（選んだもの）
-export type ChildFlow = { asksBody: boolean; details: readonly DetailCategoryKey[] };
+// asksBody は「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）
+export type ChildFlow = { asksBody: boolean };
 
 // この流れで通る画面。
 // 最初に「難しい」を選んだときは、本人の画面（区切りも）を飛ばす
 export function flowSteps(
   canSelfReport: CanSelfReport,
-  { asksBody, details }: ChildFlow,
+  { asksBody }: ChildFlow,
 ): readonly StepInfo[] {
   return STEPS.filter((item) => {
     if (canSelfReport === "difficult" && item.group === "patient") return false;
     if (item.key === "patientBody") return asksBody;
-    const detail = detailCategoryOf(item.key);
-    if (detail !== null) return details.includes(detail);
     return true;
   });
 }

@@ -8,18 +8,13 @@ import {
   EMPTY_SYMPTOMS,
   OTHER_CHOICES,
   SYMPTOM_CATEGORIES,
-  SYMPTOM_DETAILS,
   answeredBefore,
   categoryFeelings,
-  detailPhases,
   orderedOtherChoices,
   selectOtherGate,
-  symptomCue,
   symptomEmoji,
   toggleCategory,
-  toggleDetail,
   toggleOther,
-  visibleDetailChoices,
   visibleOtherChoices,
   type PatientSymptoms,
 } from "@/lib/intake/symptoms";
@@ -51,43 +46,6 @@ describe("表（症状画面.html のとおり）", () => {
       const state = selectOtherGate(withCategories(category), "ある");
       assert.equal(visibleOtherChoices(state, true).choices.includes("はきけがある"), false, category);
     }
-  });
-});
-
-describe("主症状ごとの詳しい質問（2026-11-10 に戻した）", () => {
-  test("詳しい質問は きもちわるい → いきがくるしい → せき → かぜっぽい の順で、選んだものだけ。いたい は部位の画面で聞く", () => {
-    assert.deepEqual(detailPhases(withCategories("fever", "pain", "sick")), ["sick", "fever"]);
-  });
-
-  test("質問と選択肢は消す前のとおり。ただし「きもちわるい」の「はきけがある」は外した", () => {
-    assert.equal(SYMPTOM_DETAILS.sick.question, "どんなふうに きもちわるい？");
-    assert.deepEqual(SYMPTOM_DETAILS.sick.choices, ["おなかがむかむか", "あたまがくらくら", "まわりがぐるぐる", "からだがふわふわ", "あたまがぼーっとする", "わからない"]);
-    assert.deepEqual(SYMPTOM_DETAILS.breath.choices, ["いきがしにくい", "むねがくるしい", "わからない"]);
-    assert.deepEqual(SYMPTOM_DETAILS.cough.choices, ["こんこん（かわいたせき）", "たんがからむ", "ぜえぜえする", "わからない"]);
-    assert.equal(SYMPTOM_DETAILS.fever.choices.length, 12);
-    assert.equal(symptomCue("たんがからむ"), "たんがからむ");
-    assert.equal(symptomCue("さむけがする"), "ぞくぞく");
-  });
-
-  test("主症状を外すと、その詳しい答えも消える", () => {
-    let state = toggleDetail(withCategories("sick", "cough"), "sick", "おなかがむかむか");
-    state = toggleDetail(state, "cough", "たんがからむ");
-    const removed = toggleCategory(state, "sick");
-    assert.deepEqual(removed.details, { cough: ["たんがからむ"] });
-  });
-
-  test("「わからない」を選ぶとほかを外し、ほかを選ぶと「わからない」を外す", () => {
-    let state = toggleDetail(withCategories("cough"), "cough", "たんがからむ");
-    state = toggleDetail(state, "cough", "わからない");
-    assert.deepEqual(state.details.cough, ["わからない"]);
-    assert.deepEqual(toggleDetail(state, "cough", "ぜえぜえする").details.cough, ["ぜえぜえする"]);
-  });
-
-  test("前の詳しい答えや主症状と同じ意味の選択肢は隠す（せきがでる → かぜっぽいの「せきがでる」、かぜっぽいの「からだがだるい」→ ほかにもの「からだがだるい」）", () => {
-    const state = withCategories("cough", "fever");
-    assert.equal(visibleDetailChoices(state, "fever").includes("せきがでる"), false);
-    const withDetail = selectOtherGate(toggleDetail(withCategories("fever"), "fever", "からだがだるい"), "ある");
-    assert.equal(visibleOtherChoices(withDetail, true).choices.includes("からだがだるい"), false);
   });
 });
 

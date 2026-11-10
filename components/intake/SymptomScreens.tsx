@@ -1,6 +1,6 @@
-// 「症状をえらぶ」「主症状ごとの詳しい質問」「ほかにも きになることは ある？」の画面。
-// 文言・選択肢・絵文字・短い言葉・決まりは、かずまさんの v3 の症状画面.html のとおり
-// （表と決まりは lib/intake/symptoms.ts）。詳しい質問の画面は、2026-11-09 にいったんなくし、2026-11-10 に戻した
+// 「症状をえらぶ」と「ほかにも きになることは ある？」の画面。
+// 文言・選択肢・絵文字・決まりは、かずまさんの v3 の症状画面.html のとおり
+// （表と決まりは lib/intake/symptoms.ts）。主症状ごとの詳しい質問の画面は、2026-11-09 になくした
 import { useState } from "react";
 import { PictureSelect, type PictureOption } from "@/components/intake/PictureSelect";
 import { BottomBar } from "@/components/ui/BottomBar";
@@ -12,16 +12,11 @@ import {
   OTHER_GATE_OPTIONS,
   OTHER_QUESTION,
   SYMPTOM_CATEGORIES,
-  SYMPTOM_DETAILS,
   selectOtherGate,
-  symptomCue,
   symptomEmoji,
   toggleCategory,
-  toggleDetail,
   toggleOther,
-  visibleDetailChoices,
   visibleOtherChoices,
-  type DetailCategoryKey,
   type PatientSymptoms,
   type SymptomCategoryKey,
 } from "@/lib/intake/symptoms";
@@ -75,7 +70,9 @@ export function ChooseSymptomsScreen({
   );
 }
 
-// 選択肢のボタン。絵文字（飾り）と言葉と、あれば短い言葉（HTML の symptomCues）
+// ---------- ほかにも きになることは ある？ ----------
+
+// 選択肢のボタン。絵文字（飾り）と言葉
 function SymptomChoice({
   choice,
   selected,
@@ -85,7 +82,6 @@ function SymptomChoice({
   selected: boolean;
   onClick: () => void;
 }) {
-  const cue = symptomCue(choice);
   return (
     <button
       type="button"
@@ -100,11 +96,6 @@ function SymptomChoice({
         {symptomEmoji(choice)}
       </span>
       <span className="relative text-label font-bold">{choice}</span>
-      {cue && (
-        <span aria-hidden="true" className="relative text-support text-on-surface-variant">
-          {cue}
-        </span>
-      )}
       <span className="absolute top-2 right-2">
         <CheckDot />
       </span>
@@ -117,59 +108,6 @@ function selectionStatus(values: readonly string[]): string {
     ? `えらんだよ：${values.join("、")}。もういちど おすと けせるよ。`
     : NOT_YET;
 }
-
-// ---------- 主症状ごとの詳しい質問（消す前のとおり） ----------
-
-export function SymptomDetailScreen({
-  category,
-  symptoms,
-  onChange,
-  onReaction,
-  onNext,
-}: {
-  category: DetailCategoryKey;
-  symptoms: PatientSymptoms;
-  onChange: (next: PatientSymptoms) => void;
-  onReaction: (reaction: OtherReaction) => void;
-  onNext: () => void;
-}) {
-  const selected = symptoms.details[category] ?? [];
-  return (
-    <>
-      <div className="kana-text stagger flex flex-1 flex-col gap-4 px-4 py-4">
-        {/* 案内ボックスでは、説明がキャラクターの返事と入れ替わるので、説明はここにも出す */}
-        <p className="text-support text-on-surface-variant">{OTHER_DESCRIPTION}</p>
-        <section aria-labelledby={`question-${category}`} className="flex flex-col gap-3">
-          <h2 id={`question-${category}`} className="text-title">
-            {SYMPTOM_DETAILS[category].question}
-          </h2>
-          <p className="text-support text-on-surface-variant">あてはまるものをえらんでね。</p>
-          <div className="grid grid-cols-2 gap-3">
-            {visibleDetailChoices(symptoms, category).map((choice) => (
-              <SymptomChoice
-                key={choice}
-                choice={choice}
-                selected={selected.includes(choice)}
-                onClick={() => {
-                  onReaction(choice === "わからない" ? "dontKnow" : "pick");
-                  onChange(toggleDetail(symptoms, category, choice));
-                }}
-              />
-            ))}
-          </div>
-          <p aria-live="polite" className="text-support text-on-surface-variant">
-            {selectionStatus(selected)}
-          </p>
-        </section>
-      </div>
-      <BottomBar>
-        <Button onClick={onNext}>つぎへ</Button>
-      </BottomBar>
-    </>
-  );
-}
-
-// ---------- ほかにも きになることは ある？ ----------
 
 // ある／ない／わからない を選び、「ある」なら選択肢を出す
 export function OtherSymptomsScreen({

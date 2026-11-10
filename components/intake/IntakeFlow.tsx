@@ -15,7 +15,6 @@ import { MascotGuide } from "@/components/intake/MascotGuide";
 import {
   ChooseSymptomsScreen,
   OtherSymptomsScreen,
-  SymptomDetailScreen,
 } from "@/components/intake/SymptomScreens";
 import { PatientScreen } from "@/components/intake/PatientScreen";
 import { ReviewScreen } from "@/components/intake/ReviewScreen";
@@ -28,7 +27,6 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import {
   flowSteps,
   progressOf,
-  detailCategoryOf,
   stepIndex,
   stepInfo,
   type ChildFlow,
@@ -38,7 +36,6 @@ import {
 import { guideFor, type OtherReaction } from "@/lib/intake/guide";
 import {
   categoryFeelings,
-  detailPhases,
   EMPTY_SYMPTOMS,
   type PatientSymptoms,
 } from "@/lib/intake/symptoms";
@@ -78,7 +75,7 @@ const FULL_SCREEN_STEPS: readonly Step[] = ["welcome", "patientBreak", "end"];
 
 // 最初の質問の答えを変えたときは、ここまで「通った」扱いに戻す
 const ABILITY_INDEX = stepIndex("ability");
-// 主症状の選び方を変えたときは、「どこが へん？」と詳しい質問の画面が変わるので、ここまで「通った」扱いに戻す
+// 主症状の選び方を変えたときは、「どこが へん？」を出すかが変わるので、ここまで「通った」扱いに戻す
 const CHOOSE_SYMPTOMS_INDEX = stepIndex("patientFeeling");
 
 // 回答に加えて、画面の進み具合を持つ（保存はしない）
@@ -88,13 +85,9 @@ type FlowState = IntakeState & {
   otherReaction: OtherReaction; // 「ほかに きになること」で最後に押したもの（キャラクターの返事に使う）
 };
 
-// こどもの答えで変わる画面。「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）と、
-// 詳しい質問を出す主症状（選んだもの）
+// こどもの答えで変わる画面。「どこが へん？」を出すか（主症状で「いたい」を選んだときだけ）
 function childFlow(state: FlowState): ChildFlow {
-  return {
-    asksBody: state.symptoms.categories.includes("pain"),
-    details: detailPhases(state.symptoms),
-  };
+  return { asksBody: state.symptoms.categories.includes("pain") };
 }
 
 function stepsOf(state: FlowState) {
@@ -305,12 +298,11 @@ export function IntakeFlow() {
   const patientField = PATIENT_FIELDS[state.step];
   const familyPage = FAMILY_PAGES[state.step];
   const goNext = () => goToStep(nextStep(state));
-  const detailCategory = detailCategoryOf(state.step);
 
   // 主症状と「ほかに きになること」を変える。
   // Gemini に送る主症状（patient.feelings）は、ここで今のサーバーの選択肢に置きかえて入れる。
   // 「いたい」を外したら、部位の答えも消す（部位は「いたい」のときだけ聞き、送る）。
-  // 主症状の選び方が変わったら、「どこが へん？」と詳しい質問の画面が変わるので、先の画面は「まだ通っていない」扱いに戻す
+  // 主症状の選び方が変わったら、「どこが へん？」を出すかが変わるので、先の画面は「まだ通っていない」扱いに戻す
   const setSymptoms = (symptoms: PatientSymptoms) =>
     setState((prev) => ({
       ...prev,
@@ -447,17 +439,6 @@ export function IntakeFlow() {
             <ChooseSymptomsScreen
               symptoms={state.symptoms}
               onChange={(symptoms) => setSymptoms(symptoms)}
-              onNext={goNext}
-            />
-          )}
-          {detailCategory !== null && (
-            <SymptomDetailScreen
-              category={detailCategory}
-              symptoms={state.symptoms}
-              onChange={(symptoms) => setSymptoms(symptoms)}
-              onReaction={(otherReaction) =>
-                setState((prev) => ({ ...prev, otherReaction }))
-              }
               onNext={goNext}
             />
           )}

@@ -163,15 +163,10 @@ describe("薬・アレルギーの ⚠ の行", () => {
 });
 
 describe("見直しと医師の画面の行", () => {
-  test("こどもの行は、入力の順（どんなかんじ → へんなところ → 詳しい答え → ほかに きになること → つらさ）", () => {
+  test("こどもの行は、入力の順（どんなかんじ → つらさ → へんなところ → ほかに きになること）", () => {
     assert.deepEqual(
-      buildPatientRows(patient, {
-        ...EMPTY_SYMPTOMS,
-        categories: ["pain", "sick"],
-        details: { sick: ["おなかがむかむか"] },
-        otherGate: "ない",
-      }).map((row) => row.key),
-      ["feelings", "bodyParts", "detail-sick", "otherSymptoms", "discomfort"],
+      buildPatientRows(patient, { ...EMPTY_SYMPTOMS, otherGate: "ない" }).map((row) => row.key),
+      ["feelings", "discomfort", "bodyParts", "otherSymptoms"],
     );
   });
 
@@ -210,20 +205,9 @@ describe("こどもの主症状と「ほかに きになること」の行（Gem
     assert.equal(rows[0].text, "かぜっぽい、いたい、そのほか");
   });
 
-  test("詳しい答えと「ほかに きになること」は、答えていなければ行にしない", () => {
+  test("詳しい答えの行はない。「ほかに きになること」に答えていなければ行にしない", () => {
     const rows = buildPatientRows(patient, { ...EMPTY_SYMPTOMS, categories: ["pain", "cough"] });
-    assert.deepEqual(rows.map((row) => row.key), ["feelings", "bodyParts", "discomfort"]);
-  });
-
-  test("詳しい答えは、主症状ごとに言葉で出す。「わからない」だけなら わからない（と回答）にする", () => {
-    const rows = buildPatientRows(patient, {
-      ...EMPTY_SYMPTOMS,
-      categories: ["cough", "fever"],
-      details: { cough: ["たんがからむ", "ぜえぜえする"], fever: ["わからない"] },
-    });
-    const cough = rows.find((row) => row.key === "detail-cough");
-    assert.deepEqual([cough?.label, cough?.text], ["「せきがでる」について（本人が選んだもの）", "たんがからむ、ぜえぜえする"]);
-    assert.equal(rows.find((row) => row.key === "detail-fever")?.state, "dont_know");
+    assert.deepEqual(rows.map((row) => row.key), ["feelings", "discomfort", "bodyParts"]);
   });
 
   test("ほかに きになること：ある＋選んだもの、ない、わからない を分けて出す", () => {
@@ -239,7 +223,6 @@ describe("こどもの主症状と「ほかに きになること」の行（Gem
   test("「ほかに きになること」の行は任意なので、不明に数えない", () => {
     const rows = buildPatientRows(patient, {
       categories: ["pain"],
-      details: {},
       otherGate: "わからない",
       other: [],
     });
