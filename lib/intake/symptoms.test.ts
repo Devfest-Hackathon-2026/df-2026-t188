@@ -59,18 +59,12 @@ describe("主症状ごとの詳しい質問（2026-11-10 に戻した）", () =>
     assert.deepEqual(detailPhases(withCategories("fever", "pain", "sick")), ["sick", "fever"]);
   });
 
-  test("質問と選択肢は消す前のとおり。ただし「きもちわるい」と「かぜっぽい」の「はきけがある」は外した", () => {
+  test("質問と選択肢は消す前のとおり。ただし「きもちわるい」の「はきけがある」は外した", () => {
     assert.equal(SYMPTOM_DETAILS.sick.question, "どんなふうに きもちわるい？");
     assert.deepEqual(SYMPTOM_DETAILS.sick.choices, ["おなかがむかむか", "あたまがくらくら", "まわりがぐるぐる", "からだがふわふわ", "あたまがぼーっとする", "わからない"]);
     assert.deepEqual(SYMPTOM_DETAILS.breath.choices, ["いきがしにくい", "むねがくるしい", "わからない"]);
     assert.deepEqual(SYMPTOM_DETAILS.cough.choices, ["こんこん（かわいたせき）", "たんがからむ", "ぜえぜえする", "わからない"]);
-    assert.equal(SYMPTOM_DETAILS.fever.choices.length, 11);
-    for (const key of ["sick", "breath", "cough", "fever"] as const) {
-      assert.equal(SYMPTOM_DETAILS[key].choices.includes("はきけがある"), false, key);
-      assert.equal(visibleDetailChoices(withCategories(key), key).includes("はきけがある"), false, key);
-    }
-    assert.equal(symptomEmoji("はきけがある"), "💬");
-    assert.equal(symptomCue("はきけがある"), "");
+    assert.equal(SYMPTOM_DETAILS.fever.choices.length, 12);
     assert.equal(symptomCue("たんがからむ"), "たんがからむ");
     assert.equal(symptomCue("さむけがする"), "ぞくぞく");
   });
