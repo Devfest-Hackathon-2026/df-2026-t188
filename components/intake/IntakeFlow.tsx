@@ -37,6 +37,7 @@ import { guideFor, type OtherReaction } from "@/lib/intake/guide";
 import {
   categoryFeelings,
   EMPTY_SYMPTOMS,
+  openOtherScreen,
   type PatientSymptoms,
 } from "@/lib/intake/symptoms";
 import type {
@@ -139,6 +140,8 @@ function moveTo(state: FlowState, step: Step): FlowState {
   return {
     ...state,
     step,
+    // 「ほかにも きになることは ある？」を開いたら、主訴で「そのほか」を選んでいれば最初から「ある」にする
+    symptoms: step === "patientOther" ? openOtherScreen(state.symptoms) : state.symptoms,
     direction: to === from ? state.direction : to > from ? "forward" : "back",
     reachedIndex: Math.max(state.reachedIndex, to),
     otherReaction: to === from ? state.otherReaction : null,

@@ -10,6 +10,7 @@ import {
   SYMPTOM_CATEGORIES,
   answeredBefore,
   categoryFeelings,
+  openOtherScreen,
   orderedOtherChoices,
   selectOtherGate,
   symptomEmoji,
@@ -46,6 +47,33 @@ describe("表（症状画面.html のとおり）", () => {
       const state = selectOtherGate(withCategories(category), "ある");
       assert.equal(visibleOtherChoices(state, true).choices.includes("はきけがある"), false, category);
     }
+  });
+});
+
+describe("「そのほか」を選んだときの「ほかにも」の最初の選択（2026-11-10）", () => {
+  test("主訴で「そのほか」を選んでいれば、画面を開いた時点で「ある」にする", () => {
+    const opened = openOtherScreen(withCategories("pain", "other"));
+    assert.equal(opened.otherGate, "ある");
+    assert.equal(visibleOtherChoices(opened, false).choices.length, 6);
+  });
+
+  test("「そのほか」を選んでいなければ、どれも選ばない。もう答えていれば変えない", () => {
+    assert.equal(openOtherScreen(withCategories("pain")).otherGate, null);
+    const answered = selectOtherGate(withCategories("other"), "ない");
+    assert.equal(openOtherScreen(answered).otherGate, "ない");
+  });
+
+  test("「そのほか」を外すと、最初に選んだ「ある」も外れる", () => {
+    const removed = toggleCategory(openOtherScreen(withCategories("pain", "other")), "other");
+    assert.deepEqual([removed.categories, removed.otherGate, removed.other], [["pain"], null, []]);
+  });
+
+  test("こどもが自分で選んだ答えは、「そのほか」を外しても消さない", () => {
+    const picked = toggleOther(openOtherScreen(withCategories("pain", "other")), "かゆい");
+    const removed = toggleCategory(picked, "other");
+    assert.deepEqual([removed.otherGate, removed.other], ["ある", ["かゆい"]]);
+    const chosen = selectOtherGate(withCategories("other"), "わからない");
+    assert.equal(toggleCategory(chosen, "other").otherGate, "わからない");
   });
 });
 

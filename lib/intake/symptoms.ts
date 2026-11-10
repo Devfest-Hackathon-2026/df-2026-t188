@@ -112,6 +112,8 @@ export type PatientSymptoms = {
   categories: SymptomCategoryKey[]; // 選んだ順
   otherGate: OtherGate | null; // 「ほかに きになることは ある？」の最初の答え
   other: string[]; // otherGate が「ある」のときに選んだもの（選んだ順）
+  // otherGate の「ある」が、主訴の「そのほか」から最初に選ばれたもの（こどもが押したものではない）か
+  otherGateAuto?: boolean;
 };
 
 export const EMPTY_SYMPTOMS: PatientSymptoms = {
@@ -129,6 +131,14 @@ export function toggleCategory(
   if (!state.categories.includes(key)) {
     return { ...state, categories: [...state.categories, key] };
   }
+  // 「そのほか」を外したときは、最初に選んだ「ある」だけを外す。こどもが自分で選んだ答えは消さない
+  // （「そのほか」は隠す候補と並びに関わらないので、答えを残しても食い違わない）
+  if (key === "other") {
+    const categories = state.categories.filter((item) => item !== key);
+    return state.otherGateAuto
+      ? { ...state, categories, otherGate: null, other: [], otherGateAuto: false }
+      : { ...state, categories };
+  }
   return {
     categories: state.categories.filter((item) => item !== key),
     otherGate: null,
@@ -140,7 +150,15 @@ export function toggleCategory(
 // 「ある」以外に変えると、選んでいたものは消える
 export function selectOtherGate(state: PatientSymptoms, value: OtherGate): PatientSymptoms {
   const next = state.otherGate === value ? null : value;
-  return { ...state, otherGate: next, other: [] };
+  return { ...state, otherGate: next, other: [], otherGateAuto: false };
+}
+
+// 「ほかにも きになることは ある？」の画面を開いたとき。
+// 主訴で「そのほか」を選んでいて、まだ何も答えていなければ、最初から「ある」を選んで候補を見せる
+// （「そのほか」を選んだ子は、ほかの症状を伝えたい可能性が高いため。2026-11-10 にチームで決めた）
+export function openOtherScreen(state: PatientSymptoms): PatientSymptoms {
+  if (!state.categories.includes("other") || state.otherGate !== null) return state;
+  return { ...state, otherGate: "ある", other: [], otherGateAuto: true };
 }
 
 // 選んだもの（または、すでに選んでいたもの）を切り替える。
@@ -150,8 +168,13 @@ export function toggleOther(state: PatientSymptoms, choice: string): PatientSymp
   if (selected.includes(choice)) {
     return { ...state, other: selected.filter((item) => item !== choice) };
   }
-  if (isNoneOrDontKnow(choice)) return { ...state, other: [choice] };
-  return { ...state, other: [...selected.filter((item) => !isNoneOrDontKnow(item)), choice] };
+  // 候補を選んだら、「ある」もこどもが選んだ答えとして扱う
+  if (isNoneOrDontKnow(choice)) return { ...state, other: [choice], otherGateAuto: false };
+  return {
+    ...state,
+    other: [...selected.filter((item) => !isNoneOrDontKnow(item)), choice],
+    otherGateAuto: false,
+  };
 }
 
 // ---------- 「ほかに きになること」で出す選択肢 ----------
